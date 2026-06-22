@@ -1,0 +1,235 @@
+@import "tailwindcss";
+
+:root {
+  --background: #e0f2fe;
+  --foreground: #0f172a;
+  --tomato: #e74c3c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-tomato: var(--tomato);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Sky decorative elements */
+.sky-cloud {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  filter: blur(28px);
+  animation: cloud-drift 28s ease-in-out infinite;
+}
+
+.sky-cloud-1 {
+  width: 280px;
+  height: 100px;
+  top: 8%;
+  left: 10%;
+}
+
+.sky-cloud-2 {
+  width: 360px;
+  height: 120px;
+  top: 18%;
+  right: 8%;
+  animation-delay: -8s;
+  animation-duration: 34s;
+}
+
+.sky-cloud-3 {
+  width: 220px;
+  height: 80px;
+  top: 42%;
+  left: 35%;
+  animation-delay: -14s;
+  animation-duration: 40s;
+}
+
+@keyframes cloud-drift {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(24px) translateY(-8px);
+  }
+}
+
+.sky-rain {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    195deg,
+    transparent,
+    transparent 6px,
+    rgba(255, 255, 255, 0.08) 6px,
+    rgba(255, 255, 255, 0.08) 7px
+  );
+  animation: rain-fall 0.6s linear infinite;
+}
+
+@keyframes rain-fall {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -20px 40px;
+  }
+}
+
+.sky-snow {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.9) 1px,
+    transparent 1px
+  );
+  background-size: 48px 48px;
+  animation: snow-fall 8s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes snow-fall {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 24px 48px;
+  }
+}
+
+/* Dashboard enter animations */
+@media (prefers-reduced-motion: no-preference) {
+  .enter-animate {
+    opacity: 0;
+    animation-duration: 0.7s;
+    animation-fill-mode: forwards;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .enter-up {
+    animation-name: enter-up;
+  }
+
+  .enter-down {
+    animation-name: enter-down;
+  }
+
+  .enter-left {
+    animation-name: enter-left;
+  }
+
+  .enter-right {
+    animation-name: enter-right;
+  }
+
+  .enter-fade {
+    animation-name: enter-fade;
+  }
+
+  .enter-unfold {
+    animation-name: enter-unfold;
+  }
+
+  .enter-item {
+    opacity: 0;
+    animation: enter-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .sky-enter {
+    animation: sky-reveal 1s ease-out forwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter-animate,
+  .enter-item,
+  .sky-enter {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enter-down {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes enter-unfold {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+    transform-origin: top center;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sky-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

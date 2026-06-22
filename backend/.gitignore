@@ -1,0 +1,5 @@
+# Monorepo root .gitignore covers most patterns.
+# Backend-specific overrides only:
+
+tomato.db
+*.db
