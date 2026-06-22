@@ -1,4 +1,5 @@
 import { handleAuthFailure } from "@/lib/api/authRedirect";
+import { API_BASE_URL, API_PREFIX } from "@/lib/config/api";
 
 export class ApiError extends Error {
   constructor(
@@ -10,16 +11,16 @@ export class ApiError extends Error {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+export function getApiUrl() {
+  return API_BASE_URL;
+}
 
-type RequestOptions = {
-  method?: string;
-  body?: unknown;
-  params?: Record<string, string | number | undefined>;
-};
+function toApiPath(path: string) {
+  return path.startsWith(API_PREFIX) ? path : `${API_PREFIX}${path}`;
+}
 
-function buildUrl(path: string, params?: Record<string, string | number | undefined>) {
-  const url = new URL(path, API_URL);
+export function buildApiUrl(path: string, params?: Record<string, string | number | undefined>) {
+  const url = new URL(toApiPath(path), `${API_BASE_URL}/`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -30,13 +31,19 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
   return url.toString();
 }
 
+type RequestOptions = {
+  method?: string;
+  body?: unknown;
+  params?: Record<string, string | number | undefined>;
+};
+
 export async function apiClient<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
   const { method = "GET", body, params } = options;
 
-  const response = await fetch(buildUrl(path, params), {
+  const response = await fetch(buildApiUrl(path, params), {
     method,
     credentials: "include",
     headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -60,8 +67,4 @@ export async function apiClient<T>(
   }
 
   return response.json() as Promise<T>;
-}
-
-export function getApiUrl() {
-  return API_URL;
 }

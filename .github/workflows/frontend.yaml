@@ -63,8 +63,6 @@ jobs:
           context: ./frontend
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

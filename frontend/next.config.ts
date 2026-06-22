@@ -1,17 +1,17 @@
 import type { NextConfig } from "next";
+import { API_BASE_URL } from "./src/lib/config/api";
 
-const API_PROXY_TARGET = process.env.API_PROXY_TARGET ?? "http://localhost:8080";
+const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
   output: "standalone",
   async rewrites() {
+    if (!isDev) {
+      return [];
+    }
+
     return [
-      { source: "/auth/:path*", destination: `${API_PROXY_TARGET}/auth/:path*` },
-      { source: "/weather/:path*", destination: `${API_PROXY_TARGET}/weather/:path*` },
-      { source: "/mail/:path*", destination: `${API_PROXY_TARGET}/mail/:path*` },
-      { source: "/calendar/:path*", destination: `${API_PROXY_TARGET}/calendar/:path*` },
-      { source: "/memos/:path*", destination: `${API_PROXY_TARGET}/memos/:path*` },
-      { source: "/memos", destination: `${API_PROXY_TARGET}/memos` },
+      { source: "/api/:path*", destination: `${API_BASE_URL}/api/:path*` },
     ];
   },
   images: {

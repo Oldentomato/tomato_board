@@ -1,10 +1,10 @@
 import { isMockMode } from "@/lib/config/env";
 import { mockGetMe, mockLogout } from "@/lib/mock/handlers";
-import { apiClient, getApiUrl } from "./client";
+import { apiClient, buildApiUrl } from "./client";
 import type { User } from "@/lib/types/auth";
 
 export function getGoogleLoginUrl() {
-  return `${getApiUrl()}/auth/google`;
+  return buildApiUrl("/auth/google");
 }
 
 export function getMe() {

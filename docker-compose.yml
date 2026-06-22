@@ -5,20 +5,14 @@ services:
       - ./backend/.env
     environment:
       FRONTEND_URL: http://localhost
-      OAUTH_CALLBACK_URL: http://localhost/auth/google/callback
+      OAUTH_CALLBACK_URL: http://localhost/api/auth/google/callback
       CORS_ORIGINS: http://localhost,http://localhost:3000
     expose:
       - "8080"
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: http://localhost
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost
-      API_PROXY_TARGET: http://backend:8080
+    build: ./frontend
     expose:
       - "3000"
     depends_on:

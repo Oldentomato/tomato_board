@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
     frontend_url: str = "http://localhost:3000"
-    oauth_callback_url: str = "http://localhost:3000/auth/google/callback"
+    oauth_callback_url: str = "http://localhost:3000/api/auth/google/callback"
     cors_origins: str = "http://localhost:3000,http://localhost"
     session_cookie_name: str = "tomato_session"
     database_url: str = "sqlite:///./tomato.db"

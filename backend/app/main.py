@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -36,13 +36,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
-app.include_router(weather.router)
-app.include_router(mail.router)
-app.include_router(calendar.router)
-app.include_router(memos.router)
+api = APIRouter(prefix="/api")
+api.include_router(auth.router)
+api.include_router(weather.router)
+api.include_router(mail.router)
+api.include_router(calendar.router)
+api.include_router(memos.router)
 
 
-@app.get("/health")
+@api.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+app.include_router(api)
