@@ -8,3 +8,4 @@ google-auth==2.40.1
 python-multipart==0.0.20
 itsdangerous==2.2.0
 sqlalchemy==2.0.41
+PyMySQL==1.1.1
