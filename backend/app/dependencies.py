@@ -15,14 +15,29 @@ settings = get_settings()
 REAUTH_DETAIL = "Google token expired. Please sign in again."
 
 
+def clear_session(request: Request) -> None:
+    request.session.clear()
+
+
+def raise_unauthorized(
+    request: Request,
+    *,
+    detail: str = "Unauthorized",
+) -> None:
+    clear_session(request)
+    raise HTTPException(status_code=401, detail=detail)
+
+
 def google_http_error_to_api(
     exc: HttpError,
     *,
+    request: Request,
     resource: str,
     not_found_detail: str | None = None,
 ) -> HTTPException:
     status = exc.resp.status if exc.resp else 500
     if status == 401:
+        clear_session(request)
         return HTTPException(status_code=401, detail=REAUTH_DETAIL)
     if status == 404 and not_found_detail:
         return HTTPException(status_code=404, detail=not_found_detail)
@@ -81,7 +96,7 @@ def _persist_refreshed_token(
 def get_google_credentials(request: Request) -> Credentials:
     token_data: dict[str, Any] | None = request.session.get("token")
     if not token_data or not token_data.get("access_token"):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise_unauthorized(request)
 
     scope = token_data.get("scope") or ""
     creds = Credentials(
@@ -96,13 +111,11 @@ def get_google_credentials(request: Request) -> Credentials:
 
     if creds.expired:
         if not creds.refresh_token:
-            request.session.clear()
-            raise HTTPException(status_code=401, detail=REAUTH_DETAIL)
+            raise_unauthorized(request, detail=REAUTH_DETAIL)
         try:
             creds.refresh(GoogleAuthRequest())
         except RefreshError as exc:
-            request.session.clear()
-            raise HTTPException(status_code=401, detail=REAUTH_DETAIL) from exc
+            raise_unauthorized(request, detail=REAUTH_DETAIL) from exc
         _persist_refreshed_token(request, token_data, creds)
 
     return creds

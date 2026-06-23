@@ -18,7 +18,7 @@ async def mail_summary(
     try:
         return await run_in_threadpool(fetch_mail_summary, credentials)
     except HttpError as exc:
-        raise google_http_error_to_api(exc, resource="Gmail") from exc
+        raise google_http_error_to_api(exc, request=request, resource="Gmail") from exc
 
 
 @router.get("/messages", response_model=MailMessagesResponse)
@@ -32,4 +32,4 @@ async def mail_messages(
     try:
         return await run_in_threadpool(fetch_mail_messages, credentials, page, limit)
     except HttpError as exc:
-        raise google_http_error_to_api(exc, resource="Gmail") from exc
+        raise google_http_error_to_api(exc, request=request, resource="Gmail") from exc

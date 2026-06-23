@@ -35,5 +35,9 @@ export function handleAuthFailure(status: number, message: string) {
       ? "Google 연동이 만료되었습니다. 다시 로그인해 주세요."
       : "로그인이 만료되었습니다. 다시 로그인해 주세요.";
 
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem(AUTH_RELOGIN_MESSAGE_KEY, displayMessage);
+  }
+
   redirectToLogin(displayMessage);
 }

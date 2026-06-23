@@ -17,13 +17,13 @@ export function useAuth() {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      queryClient.clear();
+      queryClient.removeQueries({ queryKey: ["auth"] });
       window.location.href = "/login";
     },
   });
 
   return {
-    user,
+    user: isError ? undefined : user,
     isLoading,
     isAuthenticated: !!user && !isError,
     logout: logoutMutation.mutate,

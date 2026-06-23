@@ -11,17 +11,13 @@ export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
   const mock = isMockMode();
-  const [reloginMessage, setReloginMessage] = useState<string | null>(null);
+  const [reloginMessage] = useState(() => consumeReloginMessage());
 
   useEffect(() => {
-    setReloginMessage(consumeReloginMessage());
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!isLoading && isAuthenticated && !reloginMessage) {
       router.replace("/dashboard");
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, reloginMessage]);
 
   if (isLoading) {
     return (

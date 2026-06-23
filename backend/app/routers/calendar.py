@@ -26,7 +26,7 @@ async def list_events(
     try:
         return await run_in_threadpool(calendar_service.fetch_events, credentials, from_date, to_date)
     except HttpError as exc:
-        raise google_http_error_to_api(exc, resource="Calendar") from exc
+        raise google_http_error_to_api(exc, request=request, resource="Calendar") from exc
 
 
 @router.post("/events", response_model=CalendarEvent, status_code=201)
@@ -39,7 +39,7 @@ async def create_event(
     try:
         return await run_in_threadpool(calendar_service.create_event, credentials, body)
     except HttpError as exc:
-        raise google_http_error_to_api(exc, resource="Calendar") from exc
+        raise google_http_error_to_api(exc, request=request, resource="Calendar") from exc
 
 
 @router.put("/events/{event_id}", response_model=CalendarEvent)
@@ -55,6 +55,7 @@ async def update_event(
     except HttpError as exc:
         raise google_http_error_to_api(
             exc,
+            request=request,
             resource="Calendar",
             not_found_detail="Event not found.",
         ) from exc
@@ -72,6 +73,7 @@ async def delete_event(
     except HttpError as exc:
         raise google_http_error_to_api(
             exc,
+            request=request,
             resource="Calendar",
             not_found_detail="Event not found.",
         ) from exc
