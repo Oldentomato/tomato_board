@@ -13,7 +13,7 @@ function getGmailLink(message: MailMessage) {
 }
 
 export function MailPanel() {
-  const { summary, messages, unreadCount, isLoading, isError, refetch } = useMail();
+  const { summary, messages, unreadCount, isLoading, isFetching, isError, refetch } = useMail();
   const theme = useSkyTheme();
 
   return (
@@ -34,10 +34,14 @@ export function MailPanel() {
         <button
           type="button"
           onClick={refetch}
-          className={cn("p-1 transition hover:opacity-70", theme.muted)}
+          disabled={isFetching}
+          className={cn(
+            "p-1 transition hover:opacity-70 disabled:opacity-50",
+            theme.muted,
+          )}
           aria-label="메일 새로고침"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
         </button>
       </div>
 

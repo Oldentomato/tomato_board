@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
-import { API_BASE_URL } from "./src/lib/config/api";
 
 const isDev = process.env.NODE_ENV !== "production";
+const API_PROXY_TARGET = process.env.API_PROXY_TARGET ?? "http://localhost:8080";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -11,7 +11,10 @@ const nextConfig: NextConfig = {
     }
 
     return [
-      { source: "/api/:path*", destination: `${API_BASE_URL}/api/:path*` },
+      {
+        source: "/api/:path*",
+        destination: `${API_PROXY_TARGET}/api/:path*`,
+      },
     ];
   },
   images: {

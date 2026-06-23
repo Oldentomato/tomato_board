@@ -114,8 +114,8 @@ def get_google_credentials(request: Request) -> Credentials:
             raise_unauthorized(request, detail=REAUTH_DETAIL)
         try:
             creds.refresh(GoogleAuthRequest())
-        except RefreshError as exc:
-            raise_unauthorized(request, detail=REAUTH_DETAIL) from exc
+        except RefreshError:
+            raise_unauthorized(request, detail=REAUTH_DETAIL)
         _persist_refreshed_token(request, token_data, creds)
 
     return creds

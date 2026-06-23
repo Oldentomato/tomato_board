@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Memo } from "@/lib/types/memo";
 import { DEFAULT_MEMO_COLOR, MEMO_COLORS } from "@/lib/types/memo";
 import { cn } from "@/lib/utils/cn";
@@ -30,6 +30,13 @@ export function MemoModal({
   const [content, setContent] = useState(memo?.content ?? "");
   const [color, setColor] = useState(memo?.color ?? DEFAULT_MEMO_COLOR);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setContent(memo?.content ?? "");
+    setColor(memo?.color ?? DEFAULT_MEMO_COLOR);
+    setError("");
+  }, [isOpen, memo?.id, memo?.content, memo?.color]);
 
   if (!isOpen) return null;
 

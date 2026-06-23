@@ -21,6 +21,7 @@ export function useMail() {
     messages: messagesQuery.data?.messages ?? [],
     unreadCount: summaryQuery.data?.unreadCount ?? 0,
     isLoading: summaryQuery.isLoading || messagesQuery.isLoading,
+    isFetching: summaryQuery.isFetching || messagesQuery.isFetching,
     isError: summaryQuery.isError || messagesQuery.isError,
     refetch: () => {
       summaryQuery.refetch();
