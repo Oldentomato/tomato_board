@@ -110,5 +110,4 @@ frontend/                 # Next.js
 │   ├── hooks/
 │   └── lib/
 backend/                  # FastAPI
-nginx/
 ```

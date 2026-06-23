@@ -31,7 +31,8 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     outputs:
-      image_tag: ${{ steps.version.outputs.tag }}
+      # format() prevents numeric-only SHAs from being coerced to scientific notation (e.g. 3.711647e+06)
+      image_tag: ${{ format('{0}', steps.version.outputs.tag) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,7 +43,7 @@ jobs:
           if [ -n "${{ inputs.image_tag }}" ]; then
             TAG="${{ inputs.image_tag }}"
           else
-            TAG="$(git rev-parse --short=7 HEAD)"
+            TAG="sha-$(git rev-parse --short=7 HEAD)"
           fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "Image tag: ${TAG}"
@@ -63,7 +64,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ format('{0}', steps.version.outputs.tag) }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -83,13 +84,13 @@ jobs:
       - name: Update image tag in values.yaml
         uses: mikefarah/yq@master
         env:
-          IMAGE_TAG: ${{ needs.ci.outputs.image_tag }}
+          IMAGE_TAG: ${{ format('{0}', needs.ci.outputs.image_tag) }}
         with:
           cmd: yq eval -i '.image.tag = env(IMAGE_TAG)' './${{ env.GITOPS_VALUES_PATH }}'
 
       - name: Commit manifest changes
         env:
-          IMAGE_TAG: ${{ needs.ci.outputs.image_tag }}
+          IMAGE_TAG: ${{ format('{0}', needs.ci.outputs.image_tag) }}
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
