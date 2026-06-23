@@ -105,7 +105,7 @@ export function CalendarPanel({ className }: { className?: string }) {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className={cn("min-w-[5.5rem] text-center text-xs font-medium", theme.text)}>
+            <span className={cn("min-w-[5.5rem] text-center text-sm font-medium", theme.text)}>
               {format(currentMonth, "yyyy.M", { locale: ko })}
             </span>
             <button
@@ -120,7 +120,7 @@ export function CalendarPanel({ className }: { className?: string }) {
               type="button"
               onClick={() => openCreateModal(new Date())}
               className={cn(
-                "ml-1 flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium transition-opacity hover:opacity-70",
+                "ml-1 flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-70",
                 theme.muted,
               )}
             >
@@ -130,7 +130,7 @@ export function CalendarPanel({ className }: { className?: string }) {
           </div>
         </div>
 
-        <div className={cn("grid shrink-0 grid-cols-7 text-center text-[10px] font-medium", theme.muted)}>
+        <div className={cn("grid shrink-0 grid-cols-7 text-center text-xs font-medium", theme.muted)}>
           {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
             <div key={d} className="py-0.5">
               {d}
@@ -153,7 +153,7 @@ export function CalendarPanel({ className }: { className?: string }) {
                 type="button"
                 onClick={() => openCreateModal(day)}
                 className={cn(
-                  "group relative flex h-6 items-center justify-center text-[11px] transition-opacity hover:opacity-80",
+                  "group relative flex h-7 items-center justify-center text-xs transition-opacity hover:opacity-80",
                   !inMonth ? theme.faint : isToday ? "font-bold text-[#E74C3C]" : theme.muted,
                 )}
               >
@@ -199,13 +199,13 @@ export function CalendarPanel({ className }: { className?: string }) {
         </div>
 
         {isLoading && (
-          <p className={cn("mt-1 shrink-0 text-center text-[10px]", theme.faint)}>불러오는 중...</p>
+          <p className={cn("mt-1 shrink-0 text-center text-xs", theme.faint)}>불러오는 중...</p>
         )}
 
         <div className={cn("mt-2 shrink-0 border-t pt-2", theme.sidebarBorder)}>
-          <p className={cn("mb-1.5 text-[10px] font-semibold", theme.text)}>다가오는 일정</p>
+          <p className={cn("mb-1.5 text-xs font-semibold", theme.text)}>다가오는 일정</p>
           {upcomingEvents.length === 0 ? (
-            <p className={cn("text-[10px]", theme.faint)}>등록된 일정이 없습니다.</p>
+            <p className={cn("text-xs", theme.faint)}>등록된 일정이 없습니다.</p>
           ) : (
             <ul className="space-y-1">
               {upcomingEvents.map((event, index) => (
@@ -217,13 +217,13 @@ export function CalendarPanel({ className }: { className?: string }) {
                   <button
                     type="button"
                     onClick={() => openEditModal(event)}
-                    className="flex w-full items-center gap-1.5 text-left text-[11px] transition-opacity hover:opacity-80"
+                    className="flex w-full items-center gap-1.5 text-left text-xs transition-opacity hover:opacity-80"
                   >
                     <span className="h-1 w-1 shrink-0 rounded-full bg-[#E74C3C]" />
                     <span className={cn("min-w-0 truncate font-medium", theme.text)}>
                       {event.title}
                     </span>
-                    <span className={cn("ml-auto shrink-0 text-[10px]", theme.faint)}>
+                    <span className={cn("ml-auto shrink-0 text-[11px]", theme.faint)}>
                       {format(parseISO(event.start), "M/d HH:mm")}
                     </span>
                   </button>

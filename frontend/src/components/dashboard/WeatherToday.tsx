@@ -48,11 +48,11 @@ export function WeatherToday() {
   });
 
   return (
-    <section className="px-2 py-3 sm:px-4 lg:py-2">
+    <section className="px-3 py-4 sm:px-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className={cn("text-sm font-medium", theme.muted)}>{formattedDate}</p>
-          <div className={cn("mt-1 flex items-start gap-1.5 text-sm", theme.muted)}>
+          <div className={cn("mt-1.5 flex items-start gap-2 text-sm", theme.muted)}>
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <div>
               <p>{today.location}</p>
@@ -64,21 +64,21 @@ export function WeatherToday() {
             </div>
           </div>
         </div>
-        <WeatherIcon icon={today.icon} className={cn("h-12 w-12 lg:h-11 lg:w-11", theme.icon)} />
+        <WeatherIcon icon={today.icon} className={cn("h-12 w-12", theme.icon)} />
       </div>
 
-      <div className="mt-4 flex items-end gap-3 lg:mt-3">
-        <span className={cn("text-6xl font-light tracking-tight sm:text-7xl lg:text-6xl", theme.text)}>
+      <div className="mt-5 flex items-end gap-4">
+        <span className={cn("text-6xl font-light tracking-tight sm:text-7xl", theme.text)}>
           {today.temp}°
         </span>
-        <span className={cn("mb-2 text-lg font-medium lg:mb-1.5 lg:text-base", theme.muted)}>
+        <span className={cn("mb-2 text-lg font-medium", theme.muted)}>
           {today.condition}
         </span>
       </div>
 
-      <p className={cn("mt-1 text-sm", theme.muted)}>체감 {today.feelsLike}°</p>
+      <p className={cn("mt-2 text-sm", theme.muted)}>체감 {today.feelsLike}°</p>
 
-      <div className={cn("mt-4 flex flex-wrap gap-4 text-sm lg:mt-3 lg:gap-5", theme.muted)}>
+      <div className={cn("mt-5 flex flex-wrap gap-6 text-sm", theme.muted)}>
         <span className="flex items-center gap-1.5">
           <Droplets className="h-4 w-4" />
           습도 {today.humidity}%
@@ -90,7 +90,7 @@ export function WeatherToday() {
       </div>
 
       {updatedAt && (
-        <p className={cn("mt-3 text-xs lg:mt-2", theme.faint)}>
+        <p className={cn("mt-4 text-xs", theme.faint)}>
           {format(new Date(updatedAt), "HH:mm", { locale: ko })} 업데이트
         </p>
       )}

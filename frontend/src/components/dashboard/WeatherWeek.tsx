@@ -29,7 +29,7 @@ function DayCard({
     <button
       type="button"
       onClick={onSelect}
-      className="enter-item flex min-w-[4.5rem] shrink-0 snap-center flex-col items-center gap-1.5 px-3 py-2 focus:outline-none sm:min-w-0 sm:flex-1"
+      className="enter-item flex min-w-[5rem] shrink-0 snap-center flex-col items-center gap-2 px-4 py-3 focus:outline-none sm:min-w-0 sm:flex-1"
       style={{ animationDelay: `${280 + index * 55}ms` }}
     >
       <span className={cn("text-xs font-medium", theme.muted)}>{dayLabel}</span>
@@ -96,10 +96,10 @@ export function WeatherWeek() {
   });
 
   return (
-    <section className="px-2 py-3 sm:px-4 lg:py-2">
-      <h2 className={cn("mb-3 text-base font-semibold lg:mb-2 lg:text-sm", theme.text)}>이번 주 날씨</h2>
+    <section className="px-3 py-4 sm:px-4">
+      <h2 className={cn("mb-4 text-base font-semibold", theme.text)}>이번 주 날씨</h2>
 
-      <div className="scrollbar-subtle scroll-fade-x -mx-2 flex snap-x snap-mandatory gap-1 overflow-x-auto px-2 pb-1 sm:mx-0 sm:gap-2 sm:px-0 lg:justify-between lg:overflow-x-visible lg:pb-0">
+      <div className="scrollbar-subtle scroll-fade-x -mx-2 flex snap-x snap-mandatory gap-2 overflow-x-auto px-2 pb-1 sm:mx-0 sm:gap-3 sm:px-0 lg:justify-between lg:overflow-x-visible lg:pb-0">
         {week.days.map((day, index) => (
           <DayCard
             key={day.date}
@@ -111,17 +111,17 @@ export function WeatherWeek() {
         ))}
       </div>
 
-      <div className="enter-item mt-3 lg:mt-2" style={{ animationDelay: "680ms" }}>
-        <div className="flex items-center justify-between gap-3">
+      <div className="enter-item mt-4" style={{ animationDelay: "680ms" }}>
+        <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className={cn("truncate text-sm font-medium lg:text-xs", theme.text)}>
+            <p className={cn("truncate text-sm font-medium", theme.text)}>
               {selectedDateLabel}
             </p>
-            <p className={cn("mt-0.5 text-sm lg:text-xs", theme.muted)}>{selected.condition}</p>
+            <p className={cn("mt-1 text-sm", theme.muted)}>{selected.condition}</p>
           </div>
-          <WeatherIcon icon={selected.icon} className={cn("h-8 w-8 shrink-0 lg:h-7 lg:w-7", theme.icon)} />
+          <WeatherIcon icon={selected.icon} className={cn("h-8 w-8 shrink-0", theme.icon)} />
         </div>
-        <div className={cn("mt-2 flex flex-wrap gap-4 text-sm lg:gap-3 lg:text-xs", theme.muted)}>
+        <div className={cn("mt-3 flex flex-wrap gap-5 text-sm", theme.muted)}>
           <span>
             최저 <strong className={theme.text}>{selected.tempMin}°</strong>
           </span>
