@@ -2,6 +2,7 @@
 
 import { EnterAnimation } from "@/components/dashboard/EnterAnimation";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { DashboardFooter } from "@/components/dashboard/DashboardFooter";
 import { SkyBackground } from "@/components/dashboard/SkyBackground";
 import { SkyThemeProvider } from "@/components/dashboard/SkyThemeContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,7 +22,7 @@ function DashboardHeader() {
 
   return (
     <EnterAnimation variant="down" delay={0}>
-      <header className="mb-8 flex items-center justify-between">
+      <header className="mb-4 flex shrink-0 items-center justify-between lg:mb-5">
       <div className="flex items-center gap-3">
         <span className="text-2xl">🍅</span>
         <h1 className={cn("text-xl font-bold", theme.text)}>Tomato Board</h1>
@@ -65,10 +66,11 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <SkyThemeProvider icon={today?.icon}>
       <SkyBackground theme={theme} />
-      <div className="relative min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-screen-2xl">
+      <div className="relative flex min-h-screen flex-col px-4 py-4 sm:px-6 sm:py-5 lg:h-dvh lg:max-h-dvh lg:overflow-hidden lg:px-8">
+        <div className="mx-auto flex w-full max-w-screen-2xl min-h-0 flex-1 flex-col">
           <DashboardHeader />
-          {children}
+          <div className="min-h-0 flex-1">{children}</div>
+          <DashboardFooter />
         </div>
       </div>
     </SkyThemeProvider>

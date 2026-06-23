@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CalendarEvent, CreateEventInput } from "@/lib/types/calendar";
 import { cn } from "@/lib/utils/cn";
 
@@ -41,6 +42,7 @@ export function EventModal({
   isSaving,
   isDeleting,
 }: EventModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState(event?.title ?? "");
   const [start, setStart] = useState(
     event ? toLocalDatetimeValue(event.start) : initialDate ?? "",
@@ -51,7 +53,20 @@ export function EventModal({
   const [description, setDescription] = useState(event?.description ?? "");
   const [error, setError] = useState("");
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setTitle(event?.title ?? "");
+    setStart(event ? toLocalDatetimeValue(event.start) : initialDate ?? "");
+    setEnd(event ? toLocalDatetimeValue(event.end) : "");
+    setDescription(event?.description ?? "");
+    setError("");
+  }, [isOpen, event?.id, event?.title, event?.start, event?.end, event?.description, initialDate]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,8 +95,8 @@ export function EventModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <button
         type="button"
         className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
@@ -188,6 +203,7 @@ export function EventModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

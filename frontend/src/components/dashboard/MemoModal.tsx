@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Memo } from "@/lib/types/memo";
 import { DEFAULT_MEMO_COLOR, MEMO_COLORS } from "@/lib/types/memo";
 import { cn } from "@/lib/utils/cn";
@@ -27,9 +28,14 @@ export function MemoModal({
   isSaving,
   isDeleting,
 }: MemoModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [content, setContent] = useState(memo?.content ?? "");
   const [color, setColor] = useState(memo?.color ?? DEFAULT_MEMO_COLOR);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -38,7 +44,7 @@ export function MemoModal({
     setError("");
   }, [isOpen, memo?.id, memo?.content, memo?.color]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,8 +61,8 @@ export function MemoModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <button
         type="button"
         className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
@@ -144,6 +150,7 @@ export function MemoModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

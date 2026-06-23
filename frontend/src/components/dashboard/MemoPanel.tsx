@@ -78,10 +78,10 @@ function MemoCard({
         transform: `rotate(${rotation}deg)`,
       }}
     >
-      <p className="line-clamp-5 whitespace-pre-wrap text-xs leading-relaxed text-slate-800">
+      <p className="line-clamp-5 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
         {memo.content}
       </p>
-      <time className="mt-2 block text-[10px] text-slate-600/70">
+      <time className="mt-2 block text-xs text-slate-600/70">
         {format(parseUtcIso(memo.updatedAt), "M/d HH:mm", { locale: ko })}
       </time>
     </div>
@@ -385,7 +385,7 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <MobileMemoStrip
         memos={memos}
         isLoading={isLoading}
@@ -394,7 +394,7 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
         onEdit={openEditModal}
       />
 
-      <div className="grid gap-5 lg:grid-cols-[12rem_1fr_12rem] lg:items-stretch lg:gap-6 xl:grid-cols-[14rem_1fr_14rem]">
+      <div className="grid gap-5 lg:grid-cols-[12rem_1fr_12rem] lg:min-h-0 lg:flex-1 lg:items-stretch lg:gap-5 xl:grid-cols-[14rem_1fr_14rem]">
         <EnterAnimation variant="unfold" delay={120} className="h-full">
           <MemoRail
             side="left"
@@ -411,7 +411,7 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
           />
         </EnterAnimation>
 
-        <div className="min-w-0">{children}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
 
         <EnterAnimation variant="unfold" delay={180} className="h-full">
           <MemoRail
@@ -458,6 +458,6 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
             : undefined
         }
       />
-    </>
+    </div>
   );
 }

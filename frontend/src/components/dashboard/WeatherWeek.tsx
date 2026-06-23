@@ -29,7 +29,7 @@ function DayCard({
     <button
       type="button"
       onClick={onSelect}
-      className="enter-item flex min-w-[72px] flex-col items-center gap-1.5 px-3 py-2 focus:outline-none"
+      className="enter-item flex min-w-[4.5rem] shrink-0 snap-center flex-col items-center gap-1.5 px-3 py-2 focus:outline-none sm:min-w-0 sm:flex-1"
       style={{ animationDelay: `${280 + index * 55}ms` }}
     >
       <span className={cn("text-xs font-medium", theme.muted)}>{dayLabel}</span>
@@ -54,10 +54,20 @@ export function WeatherWeek() {
 
   if (isLoading) {
     return (
-      <section className="flex gap-4 overflow-x-auto px-2 py-4">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className={cn("h-24 w-16 animate-pulse opacity-20", theme.text, "bg-current")} />
-        ))}
+      <section className="px-2 py-4 sm:px-4">
+        <div className="mb-4 h-6 w-32 animate-pulse rounded-full bg-current opacity-20" />
+        <div className="scrollbar-subtle scroll-fade-x -mx-2 flex gap-2 overflow-x-auto px-2 pb-1 sm:mx-0 sm:px-0 lg:justify-between lg:overflow-x-visible">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "h-24 min-w-[4.5rem] shrink-0 animate-pulse rounded-2xl opacity-20 sm:min-w-0 sm:flex-1",
+                theme.text,
+                "bg-current",
+              )}
+            />
+          ))}
+        </div>
       </section>
     );
   }
@@ -86,10 +96,10 @@ export function WeatherWeek() {
   });
 
   return (
-    <section className="px-2 py-4 sm:px-4">
-      <h2 className={cn("mb-4 text-lg font-semibold", theme.text)}>이번 주 날씨</h2>
+    <section className="px-2 py-3 sm:px-4 lg:py-2">
+      <h2 className={cn("mb-3 text-base font-semibold lg:mb-2 lg:text-sm", theme.text)}>이번 주 날씨</h2>
 
-      <div className="flex gap-1 overflow-x-auto">
+      <div className="scrollbar-subtle scroll-fade-x -mx-2 flex snap-x snap-mandatory gap-1 overflow-x-auto px-2 pb-1 sm:mx-0 sm:gap-2 sm:px-0 lg:justify-between lg:overflow-x-visible lg:pb-0">
         {week.days.map((day, index) => (
           <DayCard
             key={day.date}
@@ -101,15 +111,17 @@ export function WeatherWeek() {
         ))}
       </div>
 
-      <div className="enter-item mt-4" style={{ animationDelay: "680ms" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className={cn("font-medium", theme.text)}>{selectedDateLabel}</p>
-            <p className={cn("mt-0.5 text-sm", theme.muted)}>{selected.condition}</p>
+      <div className="enter-item mt-3 lg:mt-2" style={{ animationDelay: "680ms" }}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className={cn("truncate text-sm font-medium lg:text-xs", theme.text)}>
+              {selectedDateLabel}
+            </p>
+            <p className={cn("mt-0.5 text-sm lg:text-xs", theme.muted)}>{selected.condition}</p>
           </div>
-          <WeatherIcon icon={selected.icon} className={cn("h-9 w-9", theme.icon)} />
+          <WeatherIcon icon={selected.icon} className={cn("h-8 w-8 shrink-0 lg:h-7 lg:w-7", theme.icon)} />
         </div>
-        <div className={cn("mt-3 flex flex-wrap gap-5 text-sm", theme.muted)}>
+        <div className={cn("mt-2 flex flex-wrap gap-4 text-sm lg:gap-3 lg:text-xs", theme.muted)}>
           <span>
             최저 <strong className={theme.text}>{selected.tempMin}°</strong>
           </span>

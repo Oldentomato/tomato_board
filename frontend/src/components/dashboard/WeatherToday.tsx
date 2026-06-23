@@ -48,7 +48,7 @@ export function WeatherToday() {
   });
 
   return (
-    <section className="px-2 py-4 sm:px-4">
+    <section className="px-2 py-3 sm:px-4 lg:py-2">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className={cn("text-sm font-medium", theme.muted)}>{formattedDate}</p>
@@ -57,26 +57,28 @@ export function WeatherToday() {
             <div>
               <p>{today.location}</p>
               {coords && (
-                <p className={cn("mt-0.5 text-xs", theme.faint)}>
+                <p className={cn("mt-0.5 text-xs lg:hidden", theme.faint)}>
                   {formatCoords(coords.lat, coords.lon)}
                 </p>
               )}
             </div>
           </div>
         </div>
-        <WeatherIcon icon={today.icon} className={cn("h-14 w-14", theme.icon)} />
+        <WeatherIcon icon={today.icon} className={cn("h-12 w-12 lg:h-11 lg:w-11", theme.icon)} />
       </div>
 
-      <div className="mt-6 flex items-end gap-4">
-        <span className={cn("text-7xl font-light tracking-tight sm:text-8xl", theme.text)}>
+      <div className="mt-4 flex items-end gap-3 lg:mt-3">
+        <span className={cn("text-6xl font-light tracking-tight sm:text-7xl lg:text-6xl", theme.text)}>
           {today.temp}°
         </span>
-        <span className={cn("mb-3 text-xl font-medium", theme.muted)}>{today.condition}</span>
+        <span className={cn("mb-2 text-lg font-medium lg:mb-1.5 lg:text-base", theme.muted)}>
+          {today.condition}
+        </span>
       </div>
 
-      <p className={cn("mt-2 text-sm", theme.muted)}>체감 {today.feelsLike}°</p>
+      <p className={cn("mt-1 text-sm", theme.muted)}>체감 {today.feelsLike}°</p>
 
-      <div className={cn("mt-6 flex flex-wrap gap-5 text-sm", theme.muted)}>
+      <div className={cn("mt-4 flex flex-wrap gap-4 text-sm lg:mt-3 lg:gap-5", theme.muted)}>
         <span className="flex items-center gap-1.5">
           <Droplets className="h-4 w-4" />
           습도 {today.humidity}%
@@ -88,7 +90,7 @@ export function WeatherToday() {
       </div>
 
       {updatedAt && (
-        <p className={cn("mt-4 text-xs", theme.faint)}>
+        <p className={cn("mt-3 text-xs lg:mt-2", theme.faint)}>
           {format(new Date(updatedAt), "HH:mm", { locale: ko })} 업데이트
         </p>
       )}

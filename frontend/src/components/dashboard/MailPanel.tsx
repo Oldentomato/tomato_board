@@ -12,18 +12,19 @@ function getGmailLink(message: MailMessage) {
   return message.webLink ?? `https://mail.google.com/mail/u/0/#inbox/${message.id}`;
 }
 
-export function MailPanel() {
+export function MailPanel({ className }: { className?: string }) {
   const { summary, messages, unreadCount, isLoading, isFetching, isError, refetch } = useMail();
   const theme = useSkyTheme();
 
   return (
     <section
       className={cn(
-        "flex flex-col rounded-2xl border px-4 py-5 sm:px-5",
+        "flex min-h-0 flex-col rounded-2xl border px-4 py-4 sm:px-5 sm:py-4",
         theme.sidebarBorder,
+        className,
       )}
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex shrink-0 items-center justify-between">
         <div className="flex items-center gap-2">
           <Mail className={cn("h-5 w-5", theme.text)} />
           <h2 className={cn("font-semibold", theme.text)}>메일</h2>
@@ -45,11 +46,11 @@ export function MailPanel() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-subtle">
         {isLoading && (
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className={cn("h-12 animate-pulse opacity-20", theme.text, "bg-current")} />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className={cn("h-10 animate-pulse opacity-20", theme.text, "bg-current")} />
             ))}
           </div>
         )}
@@ -59,7 +60,7 @@ export function MailPanel() {
         )}
 
         {!isLoading && !isError && (
-          <ul className="space-y-4">
+          <ul className="space-y-3">
             {(summary?.recent ?? messages).map((message, index) => (
               <li
                 key={message.id}
@@ -88,7 +89,9 @@ export function MailPanel() {
                     </time>
                   </div>
                   <p className={cn("mt-0.5 truncate text-xs", theme.muted)}>{message.from}</p>
-                  <p className={cn("mt-0.5 line-clamp-2 text-xs", theme.faint)}>{message.snippet}</p>
+                  <p className={cn("mt-0.5 line-clamp-1 text-xs lg:line-clamp-2", theme.faint)}>
+                    {message.snippet}
+                  </p>
                 </a>
               </li>
             ))}
