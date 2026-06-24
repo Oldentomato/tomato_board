@@ -24,8 +24,7 @@ function DashboardHeader() {
     <EnterAnimation variant="down" delay={0}>
       <header className="mb-4 flex shrink-0 items-center justify-between lg:mb-5">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">🍅</span>
-        <h1 className={cn("text-xl font-bold", theme.text)}>Tomato Board</h1>
+        <h1 className={cn("text-2xl font-extrabold tracking-[0.08em]", theme.text)}>WORKSPACE</h1>
         {mock && (
           <span className={cn("text-xs font-medium", theme.faint)}>Mock</span>
         )}
@@ -66,10 +65,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <SkyThemeProvider icon={today?.icon}>
       <SkyBackground theme={theme} />
-      <div className="relative flex min-h-screen flex-col px-4 py-4 sm:px-6 sm:py-5 lg:h-dvh lg:max-h-dvh lg:overflow-hidden lg:px-8">
-        <div className="mx-auto flex w-full max-w-screen-2xl min-h-0 flex-1 flex-col">
+      <div className="relative flex min-h-screen flex-col px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+        <div className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col">
           <DashboardHeader />
-          <div className="min-h-0 flex-1">{children}</div>
+          <div className="flex-1">{children}</div>
           <DashboardFooter />
         </div>
       </div>

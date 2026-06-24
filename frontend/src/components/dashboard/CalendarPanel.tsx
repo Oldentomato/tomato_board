@@ -86,7 +86,7 @@ export function CalendarPanel({ className }: { className?: string }) {
     <>
       <section
         className={cn(
-          "flex flex-col rounded-2xl border px-4 py-3 sm:px-4",
+          "flex flex-col rounded-2xl border px-4 py-3 sm:px-4 lg-tight:py-2",
           theme.sidebarBorder,
           className,
         )}
@@ -153,7 +153,7 @@ export function CalendarPanel({ className }: { className?: string }) {
                 type="button"
                 onClick={() => openCreateModal(day)}
                 className={cn(
-                  "group relative flex h-7 items-center justify-center text-xs transition-opacity hover:opacity-80",
+                  "group relative flex h-7 items-center justify-center text-xs transition-opacity hover:opacity-80 lg-tight:h-6",
                   !inMonth ? theme.faint : isToday ? "font-bold text-[#E74C3C]" : theme.muted,
                 )}
               >
@@ -202,7 +202,7 @@ export function CalendarPanel({ className }: { className?: string }) {
           <p className={cn("mt-1 shrink-0 text-center text-xs", theme.faint)}>불러오는 중...</p>
         )}
 
-        <div className={cn("mt-2 shrink-0 border-t pt-2", theme.sidebarBorder)}>
+        <div className={cn("mt-2 shrink-0 border-t pt-2 lg-tight:hidden", theme.sidebarBorder)}>
           <p className={cn("mb-1.5 text-xs font-semibold", theme.text)}>다가오는 일정</p>
           {upcomingEvents.length === 0 ? (
             <p className={cn("text-xs", theme.faint)}>등록된 일정이 없습니다.</p>
