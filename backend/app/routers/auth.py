@@ -1,3 +1,4 @@
+from authlib.integrations.base_client.errors import MismatchingStateError
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 
@@ -18,6 +19,8 @@ async def google_login(request: Request):
             detail="Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
         )
 
+    # 계정 전환·재로그인 시 이전 OAuth state가 남아 있으면 MismatchingStateError 발생
+    request.session.clear()
     return await oauth.google.authorize_redirect(request, settings.oauth_callback_url)
 
 
@@ -26,7 +29,14 @@ async def google_callback(request: Request):
     if not settings.google_oauth_configured:
         raise HTTPException(status_code=503, detail="Google OAuth is not configured.")
 
-    token = await oauth.google.authorize_access_token(request)
+    try:
+        token = await oauth.google.authorize_access_token(request)
+    except MismatchingStateError:
+        request.session.clear()
+        return RedirectResponse(
+            url=f"{settings.frontend_url}/login?error=oauth_state",
+            status_code=302,
+        )
     userinfo = token.get("userinfo")
 
     if not userinfo:
