@@ -11,14 +11,18 @@ import { isMockMode } from "@/lib/config/env";
 import { WeatherProvider } from "@/providers/WeatherProvider";
 import { getSkyTheme } from "@/lib/weather/skyTheme";
 import { cn } from "@/lib/utils/cn";
-import { LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut, MessageSquare } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 function DashboardHeader() {
   const { user, logout, isLoggingOut } = useAuth();
   const { today } = useWeather();
+  const pathname = usePathname();
   const theme = getSkyTheme(today?.icon);
   const mock = isMockMode();
+  const isChatPage = pathname.startsWith("/dashboard/chat");
 
   return (
     <EnterAnimation variant="down" delay={0}>
@@ -30,6 +34,31 @@ function DashboardHeader() {
         )}
       </div>
       <div className="flex items-center gap-3">
+        {isChatPage ? (
+          <Link
+            href="/dashboard"
+            className={cn(
+              "flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm transition hover:bg-black/5",
+              theme.sidebarBorder,
+              theme.muted,
+            )}
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span className="hidden sm:inline">대시보드</span>
+          </Link>
+        ) : (
+          <Link
+            href="/dashboard/chat"
+            className={cn(
+              "flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm transition hover:bg-black/5",
+              theme.sidebarBorder,
+              theme.muted,
+            )}
+          >
+            <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">AI 채팅</span>
+          </Link>
+        )}
         {user?.picture && (
           <Image
             src={user.picture}
@@ -65,10 +94,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <SkyThemeProvider icon={today?.icon}>
       <SkyBackground theme={theme} />
-      <div className="relative flex min-h-screen flex-col px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
-        <div className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col">
+      <div className="relative flex min-h-screen flex-col overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+        <div className="mx-auto flex w-full max-w-screen-2xl min-h-0 flex-1 flex-col overflow-hidden">
           <DashboardHeader />
-          <div className="flex-1">{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
           <DashboardFooter />
         </div>
       </div>

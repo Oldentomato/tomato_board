@@ -113,3 +113,55 @@ class MemoPositionInput(BaseModel):
 
 class MemosResponse(BaseModel):
     memos: list[Memo]
+
+
+class ChatMessageNode(BaseModel):
+    id: str
+    role: str
+    content: str
+    createdAt: str
+    parentId: Optional[str] = None
+    childIds: list[str] = Field(default_factory=list)
+
+
+class ChatGraph(BaseModel):
+    roomId: str
+    nodes: dict[str, ChatMessageNode]
+    rootId: str
+
+
+class ChatRoom(BaseModel):
+    id: str
+    title: str
+    updatedAt: str
+    preview: str
+
+
+class ChatRoomsResponse(BaseModel):
+    rooms: list[ChatRoom]
+
+
+class CreateChatRoomResponse(BaseModel):
+    room: ChatRoom
+    graph: ChatGraph
+
+
+class AgentInfo(BaseModel):
+    id: str
+    label: str
+    description: str = ""
+
+
+class AgentsResponse(BaseModel):
+    agents: list[AgentInfo]
+
+
+class SendChatMessageInput(BaseModel):
+    parentId: str
+    content: str
+    agentId: Optional[str] = None
+
+
+class SendChatMessageResponse(BaseModel):
+    graph: ChatGraph
+    activeNodeId: str

@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://localhost"
     session_cookie_name: str = "tomato_session"
     database_url: str = "sqlite:///./tomato.db"
+    neo4j_uri: str = ""
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "password"
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
 
     @property
     def cors_origin_list(self) -> list[str]:
