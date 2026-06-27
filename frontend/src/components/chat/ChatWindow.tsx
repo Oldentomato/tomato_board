@@ -7,6 +7,7 @@ import { Bot, MessagesSquare, Send, User } from "lucide-react";
 import { useAgentContext } from "@copilotkit/react-core/v2";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
+import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -67,7 +68,7 @@ export function ChatWindow({
   return (
     <section
       className={cn(
-        "flex min-h-0 flex-col rounded-2xl border shadow-sm",
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border shadow-sm",
         theme.sidebarBorder,
         "bg-white/40 backdrop-blur-sm",
         className,
@@ -77,9 +78,9 @@ export function ChatWindow({
 
       <header
         className={cn(
-          "shrink-0 border-b px-4 py-3",
+          "sticky top-0 z-10 shrink-0 border-b px-4 py-3",
           theme.sidebarBorder,
-          "bg-gradient-to-b from-white/50 to-transparent",
+          "bg-white/80 backdrop-blur-md",
         )}
       >
         <div className="flex items-center justify-between gap-3">
@@ -175,12 +176,18 @@ export function ChatWindow({
                       : "rounded-tl-md bg-white/70 ring-1 ring-black/5",
                   )}
                 >
-                  <p className={cn("text-sm leading-relaxed whitespace-pre-wrap", theme.text)}>
-                    {message.content}
-                    {isStreaming && (
-                      <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-violet-500 align-middle" />
-                    )}
-                  </p>
+                  {isUser ? (
+                    <p className={cn("text-sm leading-relaxed whitespace-pre-wrap", theme.text)}>
+                      {message.content}
+                    </p>
+                  ) : (
+                    <div className={theme.text}>
+                      <ChatMarkdown content={message.content} />
+                      {isStreaming && (
+                        <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-violet-500 align-middle" />
+                      )}
+                    </div>
+                  )}
                   <p className={cn("mt-1.5 text-[10px] tabular-nums", theme.faint)}>
                     {format(parseISO(message.createdAt), "M월 d일 HH:mm", { locale: ko })}
                   </p>
@@ -194,9 +201,9 @@ export function ChatWindow({
       <form
         onSubmit={handleSubmit}
         className={cn(
-          "shrink-0 border-t px-4 py-3",
+          "sticky bottom-0 z-10 shrink-0 border-t px-4 py-3",
           theme.sidebarBorder,
-          "bg-white/30 backdrop-blur-sm",
+          "bg-white/80 backdrop-blur-md",
         )}
       >
         <div className="flex items-end gap-2">

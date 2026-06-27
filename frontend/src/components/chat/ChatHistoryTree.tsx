@@ -54,7 +54,7 @@ export function ChatHistoryTree({ className }: { className?: string }) {
   return (
     <section
       className={cn(
-        "flex min-h-0 flex-col rounded-2xl border shadow-sm",
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border shadow-sm",
         theme.sidebarBorder,
         "bg-white/40 backdrop-blur-sm",
         className,
@@ -62,9 +62,9 @@ export function ChatHistoryTree({ className }: { className?: string }) {
     >
       <div
         className={cn(
-          "shrink-0 border-b px-4 py-3",
+          "sticky top-0 z-10 shrink-0 border-b px-4 py-3",
           theme.sidebarBorder,
-          "bg-gradient-to-b from-white/50 to-transparent",
+          "bg-white/80 backdrop-blur-md",
         )}
       >
         <div className="flex items-center gap-2.5">
@@ -81,7 +81,7 @@ export function ChatHistoryTree({ className }: { className?: string }) {
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         {!selectedGraph || nodes.length === 0 ? (
           <p className={cn("p-4 text-sm", theme.muted)}>채팅방을 선택하세요.</p>
         ) : (

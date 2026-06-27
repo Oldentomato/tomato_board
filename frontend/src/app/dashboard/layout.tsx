@@ -90,15 +90,22 @@ function DashboardHeader() {
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const { today } = useWeather();
   const theme = getSkyTheme(today?.icon);
+  const pathname = usePathname();
+  const isChatPage = pathname.startsWith("/dashboard/chat");
 
   return (
     <SkyThemeProvider icon={today?.icon}>
       <SkyBackground theme={theme} />
-      <div className="relative flex min-h-screen flex-col overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+      <div
+        className={cn(
+          "relative flex flex-col overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8",
+          isChatPage ? "h-dvh max-h-dvh overflow-hidden" : "min-h-screen",
+        )}
+      >
         <div className="mx-auto flex w-full max-w-screen-2xl min-h-0 flex-1 flex-col overflow-hidden">
           <DashboardHeader />
-          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
-          <DashboardFooter />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+          {!isChatPage && <DashboardFooter />}
         </div>
       </div>
     </SkyThemeProvider>

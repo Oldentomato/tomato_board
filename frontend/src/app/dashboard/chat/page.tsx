@@ -49,7 +49,7 @@ export default function ChatPage() {
   return (
     <ChatGraphProvider>
       <EnterAnimation variant="up" delay={80} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="grid min-h-0 flex-1 grid-rows-2 gap-3 overflow-hidden lg:grid-cols-[minmax(260px,38%)_1fr] lg:grid-rows-1 lg:gap-4">
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-3 overflow-hidden lg:grid-cols-[minmax(260px,38%)_1fr] lg:grid-rows-1 lg:gap-4">
           <ChatHistoryTree className="h-full min-h-0" />
 
           <div
