@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.database import init_db
 from app.neo4j_client import close_neo4j, init_neo4j
 from app.agents.runner import llm_configured
+from app.agents.agui import mount_agui_agents
 from app.routers import auth, calendar, chat, mail, memos, weather
 
 settings = get_settings()
@@ -20,6 +21,7 @@ async def lifespan(_app: FastAPI):
     init_db()
     init_neo4j()
     logger.info("LLM configured: %s", llm_configured())
+    logger.info("Tavily web search: %s", settings.tavily_configured)
     yield
     close_neo4j()
 
@@ -58,3 +60,4 @@ async def health():
 
 
 app.include_router(api)
+mount_agui_agents(app)

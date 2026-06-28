@@ -63,6 +63,7 @@ export default function ChatPage() {
               className="min-h-0 min-w-0 flex-1 rounded-none border-0 bg-transparent shadow-none"
               roomsOpen={roomsOpen}
               onToggleRooms={toggleRooms}
+              onCloseRooms={() => setRoomsOpen(false)}
             />
             <ChatRoomDrawer open={roomsOpen} onClose={() => setRoomsOpen(false)} />
           </div>

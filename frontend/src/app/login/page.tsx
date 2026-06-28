@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { WorkspaceIcon } from "@/components/brand/WorkspaceIcon";
 import { useAuth } from "@/hooks/useAuth";
 import { consumeReloginMessage } from "@/lib/api/authRedirect";
 import { isMockMode } from "@/lib/config/env";
@@ -31,8 +32,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-zinc-800">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E74C3C]/10">
-            <span className="text-2xl">🍅</span>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500/10 ring-1 ring-sky-500/15">
+            <WorkspaceIcon className="h-9 w-9" />
           </div>
           <h1 className="text-2xl font-bold">Tomato Board</h1>
           <p className="mt-2 text-sm text-zinc-500">

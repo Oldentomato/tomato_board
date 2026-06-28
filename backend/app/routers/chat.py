@@ -8,7 +8,10 @@ from app.schemas import (
     ChatGraph,
     ChatRoomsResponse,
     CreateChatRoomResponse,
+    FinalizeChatMessageInput,
+    PrepareChatMessageResponse,
     SendChatMessageInput,
+    SendChatMessageResponse,
     User,
 )
 from app.services import chat as chat_service
@@ -41,6 +44,44 @@ async def delete_room(room_id: str, user: User = Depends(require_user)):
 @router.get("/rooms/{room_id}/graph", response_model=ChatGraph)
 async def get_graph(room_id: str, user: User = Depends(require_user)):
     return await run_in_threadpool(chat_service.get_graph, user.id, room_id)
+
+
+@router.post("/rooms/{room_id}/messages/prepare", response_model=PrepareChatMessageResponse)
+async def prepare_message(
+    room_id: str,
+    body: SendChatMessageInput,
+    user: User = Depends(require_user),
+):
+    if not body.content.strip():
+        raise HTTPException(status_code=400, detail="Content is required.")
+    return await run_in_threadpool(
+        chat_service.prepare_message,
+        user.id,
+        room_id,
+        body.parentId,
+        body.content,
+    )
+
+
+@router.put(
+    "/rooms/{room_id}/messages/{assistant_node_id}",
+    response_model=SendChatMessageResponse,
+)
+async def finalize_message(
+    room_id: str,
+    assistant_node_id: str,
+    body: FinalizeChatMessageInput,
+    user: User = Depends(require_user),
+):
+    if not body.content.strip():
+        raise HTTPException(status_code=400, detail="Content is required.")
+    return await run_in_threadpool(
+        chat_service.finalize_message,
+        user.id,
+        room_id,
+        assistant_node_id,
+        body,
+    )
 
 
 @router.post("/rooms/{room_id}/messages")

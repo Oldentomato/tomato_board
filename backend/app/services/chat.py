@@ -20,6 +20,8 @@ from app.schemas import (
     ChatRoom,
     ChatRoomsResponse,
     CreateChatRoomResponse,
+    FinalizeChatMessageInput,
+    PrepareChatMessageResponse,
     SendChatMessageResponse,
 )
 
@@ -174,6 +176,7 @@ def _memory_finalize_message(
     room_id: str,
     assistant_node_id: str,
     content: str,
+    thought: str | None = None,
 ) -> SendChatMessageResponse:
     _memory_get_room(user_id, room_id)
     graph = _memory_graphs.get(room_id)
@@ -184,10 +187,12 @@ def _memory_finalize_message(
     if not assistant:
         raise HTTPException(status_code=404, detail="Assistant node not found.")
 
+    update: dict = {"content": content, "createdAt": _utc_now()}
+    if thought is not None:
+        update["thought"] = thought or None
+
     updated_nodes = dict(graph.nodes)
-    updated_nodes[assistant_node_id] = assistant.model_copy(
-        update={"content": content, "createdAt": _utc_now()}
-    )
+    updated_nodes[assistant_node_id] = assistant.model_copy(update=update)
     updated_graph = _build_graph_from_nodes(room_id, graph.rootId, updated_nodes)
     _memory_graphs[room_id] = updated_graph
     return SendChatMessageResponse(graph=updated_graph, activeNodeId=assistant_node_id)
@@ -265,6 +270,7 @@ def _neo4j_get_graph(user_id: str, room_id: str) -> ChatGraph:
                id: m.id,
                role: m.role,
                content: m.content,
+               thought: m.thought,
                createdAt: m.createdAt,
                parentId: parentId,
                childIds: childIds
@@ -284,6 +290,7 @@ def _neo4j_get_graph(user_id: str, room_id: str) -> ChatGraph:
             createdAt=row["createdAt"],
             parentId=row.get("parentId"),
             childIds=row.get("childIds") or [],
+            thought=row.get("thought"),
         )
         nodes[node.id] = node
     return ChatGraph(roomId=room_id, rootId=record["rootId"], nodes=nodes)
@@ -353,12 +360,14 @@ def _neo4j_finalize_message(
     room_id: str,
     assistant_node_id: str,
     content: str,
+    thought: str | None = None,
 ) -> SendChatMessageResponse:
     driver = get_neo4j()
     query = """
     MATCH (assistant:Message {id: $assistantNodeId, roomId: $roomId})
     MATCH (r:ChatRoom {id: $roomId, userId: $userId})
     SET assistant.content = $content,
+        assistant.thought = $thought,
         assistant.createdAt = $replyAt
     RETURN assistant.id AS activeNodeId
     """
@@ -369,6 +378,7 @@ def _neo4j_finalize_message(
             roomId=room_id,
             assistantNodeId=assistant_node_id,
             content=content,
+            thought=thought,
             replyAt=_utc_now(),
         ).single()
 
@@ -423,15 +433,40 @@ def _prepare_message(user_id: str, room_id: str, parent_id: str, content: str) -
     return _memory_prepare_message(user_id, room_id, parent_id, content)
 
 
+def prepare_message(user_id: str, room_id: str, parent_id: str, content: str) -> PrepareChatMessageResponse:
+    prepared = _prepare_message(user_id, room_id, parent_id, content)
+    return PrepareChatMessageResponse(
+        graph=prepared.graph,
+        userNodeId=prepared.user_node_id,
+        assistantNodeId=prepared.assistant_node_id,
+    )
+
+
 def _finalize_message(
     user_id: str,
     room_id: str,
     assistant_node_id: str,
     content: str,
+    thought: str | None = None,
 ) -> SendChatMessageResponse:
     if neo4j_enabled():
-        return _neo4j_finalize_message(user_id, room_id, assistant_node_id, content)
-    return _memory_finalize_message(user_id, room_id, assistant_node_id, content)
+        return _neo4j_finalize_message(user_id, room_id, assistant_node_id, content, thought)
+    return _memory_finalize_message(user_id, room_id, assistant_node_id, content, thought)
+
+
+def finalize_message(
+    user_id: str,
+    room_id: str,
+    assistant_node_id: str,
+    body: FinalizeChatMessageInput,
+) -> SendChatMessageResponse:
+    return _finalize_message(
+        user_id,
+        room_id,
+        assistant_node_id,
+        body.content,
+        body.thought,
+    )
 
 
 async def send_message_stream(
@@ -457,10 +492,37 @@ async def send_message_stream(
 
     conversation = build_conversation_messages(prepared.graph, parent_id, trimmed)
     full_content = ""
+    full_thought = ""
     try:
-        async for chunk in stream_agent_response(agent_id, conversation):
-            full_content += chunk
-            yield _stream_event("delta", {"delta": chunk})
+        async for part in stream_agent_response(agent_id, conversation):
+            if part.kind == "thought":
+                full_thought += part.delta
+                yield _stream_event("thought_delta", {"delta": part.delta})
+            elif part.kind == "tool_start":
+                yield _stream_event(
+                    "tool_start",
+                    {
+                        "toolName": part.tool_name,
+                        "input": part.tool_input,
+                        "runId": part.run_id,
+                    },
+                )
+            elif part.kind == "tool_end":
+                yield _stream_event(
+                    "tool_end",
+                    {
+                        "toolName": part.tool_name,
+                        "output": part.tool_output,
+                        "runId": part.run_id,
+                    },
+                )
+            elif part.kind == "step_start":
+                yield _stream_event("step_start", {"stepName": part.step_name, "runId": part.run_id})
+            elif part.kind == "step_end":
+                yield _stream_event("step_end", {"stepName": part.step_name, "runId": part.run_id})
+            else:
+                full_content += part.delta
+                yield _stream_event("delta", {"delta": part.delta})
     except LlmNotConfiguredError:
         full_content = (
             "LLM이 설정되지 않았습니다. backend/.env에 OPENAI_API_KEY를 설정해 주세요."
@@ -476,6 +538,7 @@ async def send_message_stream(
         room_id,
         prepared.assistant_node_id,
         full_content,
+        full_thought or None,
     )
     yield _stream_event(
         "done",

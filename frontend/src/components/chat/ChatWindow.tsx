@@ -8,6 +8,8 @@ import { useAgentContext } from "@copilotkit/react-core/v2";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
+import { ChatAgentStatusPanel } from "@/components/chat/ChatAgentStatusPanel";
+import { AgentToolRenderers } from "@/components/chat/AgentToolRenderers";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -37,13 +39,15 @@ export function ChatWindow({
   className,
   roomsOpen,
   onToggleRooms,
+  onCloseRooms,
 }: {
   className?: string;
   roomsOpen?: boolean;
   onToggleRooms?: () => void;
+  onCloseRooms?: () => void;
 }) {
   const theme = useSkyTheme();
-  const { activePath, branchContext, sendMessage, selectedRoomId, isSending, streamingNodeId, agents, selectedAgentId, setSelectedAgentId } =
+  const { activePath, branchContext, sendMessage, selectedRoomId, isSending, streamingNodeId, agents, selectedAgentId, setSelectedAgentId, agentActivity } =
     useChatGraphContext();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -73,8 +77,12 @@ export function ChatWindow({
         "bg-white/40 backdrop-blur-sm",
         className,
       )}
+      onClick={() => {
+        if (roomsOpen) onCloseRooms?.();
+      }}
     >
       <BranchContextSync />
+      <AgentToolRenderers />
 
       <header
         className={cn(
@@ -133,6 +141,9 @@ export function ChatWindow({
             </button>
             )}
           </div>
+        </div>
+        <div className="mt-2.5">
+          <ChatAgentStatusPanel activity={agentActivity} />
         </div>
       </header>
 

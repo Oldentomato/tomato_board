@@ -122,6 +122,7 @@ class ChatMessageNode(BaseModel):
     createdAt: str
     parentId: Optional[str] = None
     childIds: list[str] = Field(default_factory=list)
+    thought: Optional[str] = None
 
 
 class ChatGraph(BaseModel):
@@ -165,3 +166,14 @@ class SendChatMessageInput(BaseModel):
 class SendChatMessageResponse(BaseModel):
     graph: ChatGraph
     activeNodeId: str
+
+
+class PrepareChatMessageResponse(BaseModel):
+    graph: ChatGraph
+    userNodeId: str
+    assistantNodeId: str
+
+
+class FinalizeChatMessageInput(BaseModel):
+    content: str
+    thought: Optional[str] = None

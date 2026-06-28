@@ -48,12 +48,22 @@ export type ChatStreamInitEvent = {
 export type ChatStreamHandlers = {
   onInit: (data: ChatStreamInitEvent) => void;
   onDelta: (delta: string) => void;
+  onThoughtDelta?: (delta: string) => void;
+  onToolStart?: (data: { toolName: string; input?: Record<string, unknown> | null; runId?: string | null }) => void;
+  onToolEnd?: (data: { toolName: string; output?: string | null; runId?: string | null }) => void;
+  onStepStart?: (data: { stepName: string; runId?: string | null }) => void;
+  onStepEnd?: (data: { stepName: string; runId?: string | null }) => void;
   onDone: (data: SendChatMessageResponse) => void;
 };
 
 type ChatStreamEvent =
   | { type: "init"; data: ChatStreamInitEvent }
   | { type: "delta"; data: { delta: string } }
+  | { type: "thought_delta"; data: { delta: string } }
+  | { type: "tool_start"; data: { toolName: string; input?: Record<string, unknown> | null; runId?: string | null } }
+  | { type: "tool_end"; data: { toolName: string; output?: string | null; runId?: string | null } }
+  | { type: "step_start"; data: { stepName: string; runId?: string | null } }
+  | { type: "step_end"; data: { stepName: string; runId?: string | null } }
   | { type: "done"; data: SendChatMessageResponse };
 
 function mockAssistantReply(content: string) {
@@ -184,6 +194,28 @@ async function mockSendChatMessageStream(
     assistantNodeId,
   });
 
+  if (/검색|뉴스|날씨|최신|search|news|weather/i.test(trimmed)) {
+    handlers.onToolStart?.({ toolName: "tavily_search", input: { query: trimmed }, runId: "mock-tool-1" });
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    handlers.onToolEnd?.({
+      toolName: "tavily_search",
+      output: "Mock search results for demonstration.",
+      runId: "mock-tool-1",
+    });
+  }
+
+  const thoughtChunks = [
+    "사용자 질문의 핵심을 파악합니다.",
+    " 관련 맥락을 정리한 뒤",
+    " 답변을 구성합니다.",
+  ];
+  let fullThought = "";
+  for (const chunk of thoughtChunks) {
+    fullThought += chunk;
+    handlers.onThoughtDelta?.(chunk);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  }
+
   let fullContent = "";
   for (const chunk of mockAssistantReplyChunks(trimmed)) {
     fullContent += chunk;
@@ -198,6 +230,7 @@ async function mockSendChatMessageStream(
       [assistantNodeId]: {
         ...assistantNode,
         content: fullContent,
+        thought: fullThought,
         createdAt: new Date().toISOString(),
       },
     },
@@ -226,6 +259,11 @@ async function consumeChatStream(response: Response, handlers: ChatStreamHandler
       const event = JSON.parse(line) as ChatStreamEvent;
       if (event.type === "init") handlers.onInit(event.data);
       else if (event.type === "delta") handlers.onDelta(event.data.delta);
+      else if (event.type === "thought_delta") handlers.onThoughtDelta?.(event.data.delta);
+      else if (event.type === "tool_start") handlers.onToolStart?.(event.data);
+      else if (event.type === "tool_end") handlers.onToolEnd?.(event.data);
+      else if (event.type === "step_start") handlers.onStepStart?.(event.data);
+      else if (event.type === "step_end") handlers.onStepEnd?.(event.data);
       else if (event.type === "done") handlers.onDone(event.data);
     }
   }
@@ -271,5 +309,29 @@ export function sendChatMessage(roomId: string, input: SendChatMessageInput) {
       onDelta: () => {},
       onDone: resolve,
     }).catch(reject);
+  });
+}
+
+export function prepareChatMessage(roomId: string, input: SendChatMessageInput) {
+  if (isMockMode()) {
+    throw new Error("prepareChatMessage is only available with a live backend.");
+  }
+  return apiClient<ChatStreamInitEvent>(`/chat/rooms/${roomId}/messages/prepare`, {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function finalizeChatMessage(
+  roomId: string,
+  assistantNodeId: string,
+  body: { content: string; thought?: string | null },
+) {
+  if (isMockMode()) {
+    return Promise.resolve({ graph: {} as never, activeNodeId: assistantNodeId });
+  }
+  return apiClient<SendChatMessageResponse>(`/chat/rooms/${roomId}/messages/${assistantNodeId}`, {
+    method: "PUT",
+    body,
   });
 }

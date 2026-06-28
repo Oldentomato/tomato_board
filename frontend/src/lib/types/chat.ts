@@ -8,6 +8,7 @@ export type ChatMessageNode = {
   createdAt: string;
   parentId: string | null;
   childIds: string[];
+  thought?: string | null;
 };
 
 export type ChatGraph = {
@@ -34,4 +35,26 @@ export type ChatBranchContext = {
   activeNodeId: string;
   pathNodeIds: string[];
   branchPointId: string | null;
+};
+
+export type AgentToolActivity = {
+  id: string;
+  toolName: string;
+  status: "running" | "complete" | "error";
+  input?: Record<string, unknown> | null;
+  output?: string | null;
+};
+
+export type AgentActivityState = {
+  phase: "idle" | "running" | "completed" | "error";
+  currentStep: string | null;
+  tools: AgentToolActivity[];
+  error: string | null;
+};
+
+export const IDLE_AGENT_ACTIVITY: AgentActivityState = {
+  phase: "idle",
+  currentStep: null,
+  tools: [],
+  error: null,
 };

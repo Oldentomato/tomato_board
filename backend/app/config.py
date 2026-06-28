@@ -26,7 +26,12 @@ class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
     neo4j_password: str = "password"
     openai_api_key: str = ""
-    openai_model: str = "gpt-4o-mini"
+    openai_model: str = "o4-mini"
+    openai_reasoning_enabled: bool = True
+    openai_reasoning_effort: str = "low"
+    openai_reasoning_summary: str = ""
+    tavily_api_key: str = ""
+    tavily_max_results: int = 5
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -35,6 +40,10 @@ class Settings(BaseSettings):
     @property
     def google_oauth_configured(self) -> bool:
         return bool(self.google_client_id and self.google_client_secret)
+
+    @property
+    def tavily_configured(self) -> bool:
+        return bool(self.tavily_api_key.strip())
 
 
 @lru_cache
