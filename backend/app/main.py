@@ -10,6 +10,7 @@ from app.database import init_db
 from app.neo4j_client import close_neo4j, init_neo4j
 from app.agents.runner import llm_configured
 from app.agents.agui import mount_agui_agents
+from app.middleware import GoogleAuthMiddleware
 from app.routers import auth, calendar, chat, mail, memos, weather
 
 settings = get_settings()
@@ -28,6 +29,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Tomato Board API", version="1.0.0", lifespan=lifespan)
 
+app.add_middleware(GoogleAuthMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,

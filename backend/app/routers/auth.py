@@ -19,7 +19,6 @@ async def google_login(request: Request):
             detail="Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
         )
 
-    # 계정 전환·재로그인 시 이전 OAuth state가 남아 있으면 MismatchingStateError 발생
     request.session.clear()
     return await oauth.google.authorize_redirect(request, settings.oauth_callback_url)
 

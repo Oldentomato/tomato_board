@@ -13,19 +13,20 @@ from app.schemas import User
 settings = get_settings()
 
 REAUTH_DETAIL = "Google token expired. Please sign in again."
+REFRESH_BUFFER_SECONDS = 300
 
 
 def clear_session(request: Request) -> None:
     request.session.clear()
 
 
-def raise_unauthorized(
-    request: Request,
-    *,
-    detail: str = "Unauthorized",
-) -> None:
+def clear_google_token(request: Request) -> None:
+    request.session.pop("token", None)
+
+
+def raise_google_token_error(request: Request) -> None:
     clear_session(request)
-    raise HTTPException(status_code=401, detail=detail)
+    raise HTTPException(status_code=401, detail=REAUTH_DETAIL)
 
 
 def google_http_error_to_api(
@@ -93,13 +94,9 @@ def _persist_refreshed_token(
     }
 
 
-def get_google_credentials(request: Request) -> Credentials:
-    token_data: dict[str, Any] | None = request.session.get("token")
-    if not token_data or not token_data.get("access_token"):
-        raise_unauthorized(request)
-
+def _build_credentials(token_data: dict[str, Any]) -> Credentials:
     scope = token_data.get("scope") or ""
-    creds = Credentials(
+    return Credentials(
         token=token_data.get("access_token"),
         refresh_token=token_data.get("refresh_token"),
         token_uri="https://oauth2.googleapis.com/token",
@@ -109,13 +106,45 @@ def get_google_credentials(request: Request) -> Credentials:
         expiry=_parse_token_expiry(token_data),
     )
 
-    if creds.expired:
-        if not creds.refresh_token:
-            raise_unauthorized(request, detail=REAUTH_DETAIL)
-        try:
-            creds.refresh(GoogleAuthRequest())
-        except RefreshError:
-            raise_unauthorized(request, detail=REAUTH_DETAIL)
-        _persist_refreshed_token(request, token_data, creds)
 
-    return creds
+def _token_needs_refresh(creds: Credentials) -> bool:
+    if creds.expired:
+        return True
+    if creds.expiry is None:
+        return False
+    remaining = (creds.expiry - datetime.utcnow()).total_seconds()
+    return remaining < REFRESH_BUFFER_SECONDS
+
+
+def try_refresh_google_token(request: Request) -> bool:
+    """Google access token을 필요 시 갱신한다."""
+    token_data: dict[str, Any] | None = request.session.get("token")
+    if not token_data or not token_data.get("access_token"):
+        return False
+
+    creds = _build_credentials(token_data)
+    if not _token_needs_refresh(creds):
+        return True
+
+    if not creds.refresh_token:
+        clear_google_token(request)
+        return False
+
+    try:
+        creds.refresh(GoogleAuthRequest())
+    except RefreshError:
+        clear_google_token(request)
+        return False
+
+    _persist_refreshed_token(request, token_data, creds)
+    return True
+
+
+def get_google_credentials(request: Request) -> Credentials:
+    if not try_refresh_google_token(request):
+        raise_google_token_error(request)
+
+    token_data = request.session.get("token")
+    if not token_data:
+        raise_google_token_error(request)
+    return _build_credentials(token_data)
