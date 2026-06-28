@@ -25,6 +25,9 @@ function getRuntimeHandler(): RuntimeBundle {
       general: new LangGraphHttpAgent({
         url: getAgUiAgentUrl("general"),
       }),
+      debug: new LangGraphHttpAgent({
+        url: getAgUiAgentUrl("debug"),
+      }),
     },
   });
 

@@ -57,11 +57,12 @@ function upsertTool(
 
 export function useChatGraph() {
   const queryClient = useQueryClient();
-  const { agent } = useAgent({ agentId: "general" });
   const roomsKey = ["chat", "rooms"];
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const activeAgentId = selectedAgentId ?? "general";
+  const { agent } = useAgent({ agentId: activeAgentId });
   const [isSending, setIsSending] = useState(false);
   const [streamingNodeId, setStreamingNodeId] = useState<string | null>(null);
   const [agentActivity, setAgentActivity] = useState<AgentActivityState>(IDLE_AGENT_ACTIVITY);

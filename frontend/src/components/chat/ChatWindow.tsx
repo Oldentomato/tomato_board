@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Bot, MessagesSquare, Send, User } from "lucide-react";
@@ -51,6 +51,18 @@ export function ChatWindow({
     useChatGraphContext();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustTextareaHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input, adjustTextareaHeight]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -219,6 +231,7 @@ export function ChatWindow({
       >
         <div className="flex items-end gap-2">
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -228,9 +241,9 @@ export function ChatWindow({
               }
             }}
             placeholder="메시지 입력…"
-            rows={2}
+            rows={1}
             className={cn(
-              "min-h-[44px] flex-1 resize-none rounded-xl border bg-white/70 px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-black/15 focus:ring-2 focus:ring-black/5",
+              "min-h-[44px] flex-1 resize-none overflow-hidden rounded-xl border bg-white/70 px-3.5 py-2.5 text-sm leading-relaxed shadow-sm outline-none transition focus:border-black/15 focus:ring-2 focus:ring-black/5",
               theme.sidebarBorder,
               theme.text,
             )}

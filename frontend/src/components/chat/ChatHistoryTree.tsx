@@ -15,7 +15,7 @@ import { GitBranch, Move } from "lucide-react";
 import { TurnFlowNode, type TurnFlowNodeData } from "@/components/chat/TurnFlowNode";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
-import { graphToFlowElements } from "@/lib/chat/graphToFlow";
+import { graphToFlowEdges, graphToFlowNodes, graphTopologyKey } from "@/lib/chat/graphToFlow";
 import { cn } from "@/lib/utils/cn";
 
 const nodeTypes = { turn: TurnFlowNode } satisfies NodeTypes;
@@ -26,11 +26,25 @@ export function ChatHistoryTree({ className }: { className?: string }) {
   const flowRef = useRef<ReactFlowInstance<Node<TurnFlowNodeData>, Edge> | null>(null);
 
   const pathNodeIds = branchContext?.pathNodeIds ?? [];
+  const pathKey = useMemo(() => pathNodeIds.join("|"), [pathNodeIds]);
+  const topologyKey = useMemo(
+    () => (selectedGraph ? graphTopologyKey(selectedGraph) : ""),
+    [selectedGraph],
+  );
 
-  const { nodes, edges } = useMemo(() => {
-    if (!selectedGraph) return { nodes: [], edges: [] };
-    return graphToFlowElements(selectedGraph, activeNodeId, pathNodeIds);
-  }, [selectedGraph, activeNodeId, pathNodeIds]);
+  const edges = useMemo(
+    () => {
+      if (!selectedGraph) return [];
+      return graphToFlowEdges(selectedGraph, activeNodeId, pathNodeIds);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- edge는 graph topology/path 변경 시에만 재생성
+    [topologyKey, pathKey, activeNodeId, selectedGraph?.roomId],
+  );
+
+  const nodes = useMemo(() => {
+    if (!selectedGraph) return [];
+    return graphToFlowNodes(selectedGraph, activeNodeId, pathNodeIds);
+  }, [selectedGraph, activeNodeId, pathKey]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

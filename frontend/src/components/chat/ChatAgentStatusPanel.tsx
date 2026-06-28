@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAgent, useAgentContext } from "@copilotkit/react-core/v2";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import type { AgentActivityState, AgentToolActivity } from "@/lib/types/chat";
 import { IDLE_AGENT_ACTIVITY } from "@/lib/types/chat";
 import { cn } from "@/lib/utils/cn";
@@ -106,7 +107,9 @@ export function ChatAgentStatusPanel({
   className?: string;
 }) {
   const theme = useSkyTheme();
-  const { agent } = useAgent({ agentId: "general" });
+  const { selectedAgentId } = useChatGraphContext();
+  const activeAgentId = selectedAgentId ?? "general";
+  const { agent } = useAgent({ agentId: activeAgentId });
 
   const mergedActivity = useMemo<AgentActivityState>(() => {
     if (activity.phase !== "idle") return activity;
@@ -120,7 +123,7 @@ export function ChatAgentStatusPanel({
     description: "에이전트 실행 상태 (단계, 도구 호출, AG-UI 연결)",
     value: {
       aguiConnected: true,
-      agentId: "general",
+      agentId: activeAgentId,
       isRunning: agent.isRunning || mergedActivity.phase === "running",
       phase: mergedActivity.phase,
       currentStep: mergedActivity.currentStep,
