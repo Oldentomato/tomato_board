@@ -1,3 +1,5 @@
+import logging
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -11,9 +13,24 @@ from app.config import get_settings
 from app.schemas import User
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 REAUTH_DETAIL = "Google token expired. Please sign in again."
 REFRESH_BUFFER_SECONDS = 300
+
+
+def normalize_stored_token(token: dict[str, Any]) -> dict[str, Any]:
+    """OAuth 토큰 응답을 세션 저장 형식으로 정규화한다."""
+    expires_at = token.get("expires_at")
+    if expires_at is None and token.get("expires_in") is not None:
+        expires_at = time.time() + int(token["expires_in"])
+
+    return {
+        "access_token": token.get("access_token"),
+        "refresh_token": token.get("refresh_token"),
+        "scope": token.get("scope", ""),
+        "expires_at": expires_at,
+    }
 
 
 def clear_session(request: Request) -> None:
@@ -86,12 +103,14 @@ def _persist_refreshed_token(
     token_data: dict[str, Any],
     creds: Credentials,
 ) -> None:
-    request.session["token"] = {
-        **token_data,
-        "access_token": creds.token,
-        "refresh_token": creds.refresh_token or token_data.get("refresh_token"),
-        "expires_at": _expiry_to_timestamp(creds.expiry),
-    }
+    request.session["token"] = normalize_stored_token(
+        {
+            **token_data,
+            "access_token": creds.token,
+            "refresh_token": creds.refresh_token or token_data.get("refresh_token"),
+            "expires_at": _expiry_to_timestamp(creds.expiry),
+        }
+    )
 
 
 def _build_credentials(token_data: dict[str, Any]) -> Credentials:
@@ -127,12 +146,14 @@ def try_refresh_google_token(request: Request) -> bool:
         return True
 
     if not creds.refresh_token:
+        logger.warning("Google refresh_token missing in session; re-login required")
         clear_google_token(request)
         return False
 
     try:
         creds.refresh(GoogleAuthRequest())
-    except RefreshError:
+    except RefreshError as exc:
+        logger.warning("Google token refresh failed: %s", exc)
         clear_google_token(request)
         return False
 

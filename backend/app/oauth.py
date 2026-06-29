@@ -17,8 +17,12 @@ oauth.register(
             "https://www.googleapis.com/auth/gmail.readonly "
             "https://www.googleapis.com/auth/calendar"
         ),
-        "prompt": "consent",
+    },
+    # authlib는 prompt만 authorize URL에 자동 포함한다.
+    # access_type은 authorize_params로 넘겨야 Google이 refresh_token을 발급한다.
+    authorize_params={
         "access_type": "offline",
+        "prompt": "consent",
     },
 )
 

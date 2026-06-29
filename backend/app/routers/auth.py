@@ -1,14 +1,17 @@
+import logging
+
 from authlib.integrations.base_client.errors import MismatchingStateError
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 
 from app.config import get_settings
-from app.dependencies import require_user
+from app.dependencies import normalize_stored_token, require_user
 from app.oauth import oauth
 from app.schemas import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/google")
@@ -47,12 +50,14 @@ async def google_callback(request: Request):
         "name": userinfo.get("name", userinfo.get("email", "User")),
         "picture": userinfo.get("picture"),
     }
-    request.session["token"] = {
-        "access_token": token.get("access_token"),
-        "refresh_token": token.get("refresh_token"),
-        "scope": token.get("scope", ""),
-        "expires_at": token.get("expires_at"),
-    }
+    stored_token = normalize_stored_token(token)
+    if not stored_token.get("refresh_token"):
+        logger.error(
+            "Google OAuth completed without refresh_token for %s; "
+            "access token will expire in ~1 hour",
+            userinfo.get("email", userinfo["sub"]),
+        )
+    request.session["token"] = stored_token
 
     return RedirectResponse(url=f"{settings.frontend_url}/dashboard", status_code=302)
 
