@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { EnterAnimation } from "@/components/dashboard/EnterAnimation";
+import { ChatDocumentDrawer } from "@/components/chat/ChatDocumentDrawer";
 import { ChatGraphProvider } from "@/components/chat/ChatGraphContext";
 import { ChatHistoryTree } from "@/components/chat/ChatHistoryTree";
 import { ChatRoomList } from "@/components/chat/ChatRoomList";
@@ -43,8 +44,17 @@ function ChatRoomDrawer({
 export default function ChatPage() {
   const theme = useSkyTheme();
   const [roomsOpen, setRoomsOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
 
-  const toggleRooms = () => setRoomsOpen((prev) => !prev);
+  const toggleRooms = () => {
+    setRoomsOpen((prev) => !prev);
+    setDocumentsOpen(false);
+  };
+
+  const toggleDocuments = () => {
+    setDocumentsOpen((prev) => !prev);
+    setRoomsOpen(false);
+  };
 
   return (
     <ChatGraphProvider>
@@ -64,8 +74,12 @@ export default function ChatPage() {
               roomsOpen={roomsOpen}
               onToggleRooms={toggleRooms}
               onCloseRooms={() => setRoomsOpen(false)}
+              documentsOpen={documentsOpen}
+              onToggleDocuments={toggleDocuments}
+              onCloseDocuments={() => setDocumentsOpen(false)}
             />
             <ChatRoomDrawer open={roomsOpen} onClose={() => setRoomsOpen(false)} />
+            <ChatDocumentDrawer open={documentsOpen} onClose={() => setDocumentsOpen(false)} />
           </div>
         </div>
       </EnterAnimation>

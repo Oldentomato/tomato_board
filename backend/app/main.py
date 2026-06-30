@@ -11,7 +11,7 @@ from app.neo4j_client import close_neo4j, init_neo4j
 from app.agents.runner import llm_configured
 from app.agents.agui import mount_agui_agents
 from app.middleware import GoogleAuthMiddleware
-from app.routers import auth, calendar, chat, mail, memos, weather
+from app.routers import auth, calendar, chat, documents, mail, memos, weather
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -23,6 +23,11 @@ async def lifespan(_app: FastAPI):
     init_neo4j()
     logger.info("LLM configured: %s", llm_configured())
     logger.info("Tavily web search: %s", settings.tavily_configured)
+    logger.info("MinIO storage: %s", settings.minio_configured)
+    logger.info(
+        "Document storage: %s",
+        "local files" if settings.minio_use_local_storage or not settings.minio_configured else "minio",
+    )
     yield
     close_neo4j()
 
@@ -53,6 +58,7 @@ api.include_router(weather.router)
 api.include_router(mail.router)
 api.include_router(calendar.router)
 api.include_router(memos.router)
+api.include_router(documents.router)
 api.include_router(chat.router)
 
 

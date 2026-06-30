@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     openai_reasoning_summary: str = ""
     tavily_api_key: str = ""
     tavily_max_results: int = 5
+    minio_endpoint: str = ""
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
+    minio_bucket: str = "documents"
+    minio_secure: bool = False
+    minio_use_local_storage: bool = False
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -44,6 +50,14 @@ class Settings(BaseSettings):
     @property
     def tavily_configured(self) -> bool:
         return bool(self.tavily_api_key.strip())
+
+    @property
+    def minio_configured(self) -> bool:
+        return bool(
+            self.minio_endpoint.strip()
+            and self.minio_access_key.strip()
+            and self.minio_secret_key.strip()
+        )
 
 
 @lru_cache

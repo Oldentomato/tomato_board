@@ -3,6 +3,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from app.agents.context import set_current_user_id
 from app.dependencies import (
     REAUTH_DETAIL,
     clear_session,
@@ -42,4 +43,9 @@ class GoogleAuthMiddleware(BaseHTTPMiddleware):
             clear_session(request)
             return JSONResponse(status_code=401, content={"detail": REAUTH_DETAIL})
 
-        return await call_next(request)
+        user = get_session_user(request)
+        set_current_user_id(user.id if user else None)
+        try:
+            return await call_next(request)
+        finally:
+            set_current_user_id(None)

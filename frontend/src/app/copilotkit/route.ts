@@ -23,6 +23,10 @@ function createRuntimeHandler(cookieHeader: string): CopilotRuntimeFetchHandler 
         url: getAgUiAgentUrl("debug"),
         headers: backendHeaders,
       }),
+      document: new LangGraphHttpAgent({
+        url: getAgUiAgentUrl("document"),
+        headers: backendHeaders,
+      }),
     },
   });
 

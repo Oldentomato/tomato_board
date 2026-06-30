@@ -17,6 +17,10 @@ import {
 import { buildAgUiMessages } from "@/lib/chat/agUiMessages";
 import { isMockMode } from "@/lib/config/env";
 import {
+  DOCUMENTS_QUERY_KEY,
+  shouldRefreshDocumentsForTool,
+} from "@/hooks/useDocuments";
+import {
   IDLE_AGENT_ACTIVITY,
   type AgentActivityState,
   type AgentToolActivity,
@@ -110,6 +114,15 @@ export function useChatGraph() {
       await queryClient.invalidateQueries({ queryKey: ["chat", "graph", selectedRoomId] });
     }
   }, [queryClient, selectedRoomId]);
+
+  const invalidateDocumentsIfNeeded = useCallback(
+    (toolName: string) => {
+      if (shouldRefreshDocumentsForTool(toolName)) {
+        void queryClient.invalidateQueries({ queryKey: DOCUMENTS_QUERY_KEY });
+      }
+    },
+    [queryClient],
+  );
 
   const createRoomMutation = useMutation({
     mutationFn: createChatRoom,
@@ -236,6 +249,7 @@ export function useChatGraph() {
               output: output ?? null,
             });
             setAgentActivity((prev) => ({ ...prev, tools }));
+            invalidateDocumentsIfNeeded(toolName);
           },
           onStepStart: ({ stepName }) => {
             setAgentActivity((prev) => ({
@@ -258,7 +272,7 @@ export function useChatGraph() {
         },
       );
     },
-    [queryClient, selectedAgentId, invalidateChat],
+    [queryClient, selectedAgentId, invalidateChat, invalidateDocumentsIfNeeded],
   );
 
   const sendMessageViaAgUi = useCallback(
@@ -336,13 +350,17 @@ export function useChatGraph() {
             const raw = "content" in event ? event.content : null;
             const content =
               typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
+            const toolName = String(
+              ("toolCallName" in event && event.toolCallName) || "tool",
+            );
             tools = upsertTool(tools, {
               id: event.toolCallId,
-              toolName: String(("toolCallName" in event && event.toolCallName) || "tool"),
+              toolName,
               status: "complete",
               output: content,
             });
             setAgentActivity((prev) => ({ ...prev, tools }));
+            invalidateDocumentsIfNeeded(toolName);
           },
           onRunErrorEvent: ({ event }) => {
             setAgentActivity((prev) => ({
@@ -374,20 +392,51 @@ export function useChatGraph() {
       });
       await invalidateChat();
     },
-    [agent, queryClient, selectedAgentId, updateAssistantNode, invalidateChat],
+    [agent, queryClient, selectedAgentId, updateAssistantNode, invalidateChat, invalidateDocumentsIfNeeded],
   );
+
+  const ensureRoomContext = useCallback(async (): Promise<{ roomId: string; parentId: string }> => {
+    if (selectedRoomId) {
+      const cachedGraph =
+        selectedGraph ?? queryClient.getQueryData<ChatGraph>(["chat", "graph", selectedRoomId]);
+      const parentId =
+        activeNodeId ??
+        (cachedGraph ? getDeepestLeaf(cachedGraph, cachedGraph.rootId) : null);
+
+      if (parentId) {
+        return { roomId: selectedRoomId, parentId };
+      }
+
+      const graph = await getChatGraph(selectedRoomId);
+      queryClient.setQueryData(["chat", "graph", selectedRoomId], graph);
+      const resolvedParent = getDeepestLeaf(graph, graph.rootId);
+      setActiveNodeId(resolvedParent);
+      return { roomId: selectedRoomId, parentId: resolvedParent };
+    }
+
+    const created = await createRoomMutation.mutateAsync();
+    return { roomId: created.room.id, parentId: created.graph.rootId };
+  }, [
+    activeNodeId,
+    createRoomMutation,
+    queryClient,
+    selectedGraph,
+    selectedRoomId,
+  ]);
 
   const sendMessage = useCallback(
     async (content: string) => {
       const trimmed = content.trim();
-      if (!trimmed || !selectedRoomId || !activeNodeId || isSending) return;
+      if (!trimmed || isSending) return;
 
       setIsSending(true);
       try {
+        const { roomId, parentId } = await ensureRoomContext();
+
         if (isMockMode()) {
-          await sendMessageViaStream(selectedRoomId, activeNodeId, trimmed);
+          await sendMessageViaStream(roomId, parentId, trimmed);
         } else {
-          await sendMessageViaAgUi(selectedRoomId, activeNodeId, trimmed);
+          await sendMessageViaAgUi(roomId, parentId, trimmed);
         }
       } catch (error) {
         setAgentActivity((prev) => ({
@@ -405,9 +454,8 @@ export function useChatGraph() {
       }
     },
     [
-      selectedRoomId,
-      activeNodeId,
       isSending,
+      ensureRoomContext,
       sendMessageViaStream,
       sendMessageViaAgUi,
     ],

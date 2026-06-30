@@ -46,6 +46,7 @@ client_secret*.json
 *.sqlite
 *.sqlite3
 backend/tomato.db
+backend/.local_storage/
 
 # --- Testing & coverage ---
 /coverage

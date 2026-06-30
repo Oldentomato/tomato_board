@@ -177,3 +177,34 @@ class PrepareChatMessageResponse(BaseModel):
 class FinalizeChatMessageInput(BaseModel):
     content: str
     thought: Optional[str] = None
+
+
+class Document(BaseModel):
+    id: str
+    title: str
+    originalFilename: str
+    sourceFormat: str
+    outputFormat: Optional[str] = None
+    status: str
+    fileSize: int
+    mimeType: str
+    errorMessage: Optional[str] = None
+    createdAt: str
+    updatedAt: str
+
+
+class DocumentsResponse(BaseModel):
+    documents: list[Document]
+
+
+class ConvertDocumentInput(BaseModel):
+    content: str
+    title: str = "문서"
+    target_format: str = "docx"
+
+
+class UserStorageInfo(BaseModel):
+    userId: str
+    storagePrefix: str
+    createdAt: str
+    updatedAt: str

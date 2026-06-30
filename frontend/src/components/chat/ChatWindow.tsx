@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Bot, MessagesSquare, Send, User } from "lucide-react";
+import { Bot, FileText, MessagesSquare, Send, User } from "lucide-react";
 import { useAgentContext } from "@copilotkit/react-core/v2";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
@@ -40,11 +40,17 @@ export function ChatWindow({
   roomsOpen,
   onToggleRooms,
   onCloseRooms,
+  documentsOpen,
+  onToggleDocuments,
+  onCloseDocuments,
 }: {
   className?: string;
   roomsOpen?: boolean;
   onToggleRooms?: () => void;
   onCloseRooms?: () => void;
+  documentsOpen?: boolean;
+  onToggleDocuments?: () => void;
+  onCloseDocuments?: () => void;
 }) {
   const theme = useSkyTheme();
   const { activePath, branchContext, sendMessage, selectedRoomId, isSending, streamingNodeId, agents, selectedAgentId, setSelectedAgentId, agentActivity } =
@@ -91,6 +97,7 @@ export function ChatWindow({
       )}
       onClick={() => {
         if (roomsOpen) onCloseRooms?.();
+        if (documentsOpen) onCloseDocuments?.();
       }}
     >
       <BranchContextSync />
@@ -135,6 +142,23 @@ export function ChatWindow({
                 ))}
               </select>
             )}
+            {onToggleDocuments && (
+              <button
+                type="button"
+                onClick={onToggleDocuments}
+                aria-expanded={documentsOpen}
+                className={cn(
+                  "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200",
+                  documentsOpen
+                    ? "bg-[#E74C3C] text-white shadow-sm"
+                    : cn("border bg-white/60 hover:bg-white/80", theme.sidebarBorder, theme.muted),
+                )}
+                aria-label={documentsOpen ? "문서 목록 닫기" : "문서 목록 열기"}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>문서</span>
+              </button>
+            )}
             {onToggleRooms && (
             <button
               type="button"
@@ -167,7 +191,7 @@ export function ChatWindow({
             </div>
             <p className="text-sm font-medium">대화를 시작하세요</p>
             <p className={cn("mt-1.5 max-w-xs text-xs leading-relaxed", theme.faint)}>
-              왼쪽 트리에서 Turn을 선택하면 해당 지점에서 분기할 수 있습니다.
+              메시지를 입력하면 새 채팅방이 자동으로 만들어집니다.
             </p>
           </div>
         ) : (
