@@ -265,7 +265,10 @@ export function useChatGraph() {
             });
             setAgentActivity((prev) => ({ ...prev, tools }));
             invalidateDocumentsIfNeeded(toolName);
-            if (toolName === "preview_document" || parsePreviewDocumentToolOutput(output ?? null)?.preview_mode) {
+            if (
+              assistantNodeId &&
+              (toolName === "preview_document" || parsePreviewDocumentToolOutput(output ?? null)?.preview_mode)
+            ) {
               attachPreviewToMessage(assistantNodeId, output ?? null);
             }
           },
