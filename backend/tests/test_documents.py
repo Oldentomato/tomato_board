@@ -118,7 +118,109 @@ def test_extract_docx_text():
     assert "본문" in text
 
 
-def test_extract_hwpx_routes_legacy_hwp_bytes_to_hwp_extractor():
+def test_extract_pdf_text():
+    from unittest.mock import MagicMock, patch
+
+    from app.services.document_convert import extract_pdf_text, extract_text_from_bytes
+
+    mock_page = MagicMock()
+    mock_page.extract_text.return_value = "PDF 본문 내용"
+    mock_reader = MagicMock()
+    mock_reader.pages = [mock_page]
+    pdf_bytes = b"%PDF-1.4 test"
+
+    with patch("pypdf.PdfReader", return_value=mock_reader):
+        text = extract_pdf_text(pdf_bytes)
+    assert "PDF 본문" in text
+
+    with patch("pypdf.PdfReader", return_value=mock_reader):
+        routed = extract_text_from_bytes(pdf_bytes, "pdf")
+    assert routed == text
+
+
+def test_extract_pdf_text_rejects_invalid_header():
+    from app.services.document_convert import extract_pdf_text
+
+    with pytest.raises(ValueError, match="PDF"):
+        extract_pdf_text(b"not-a-pdf")
+
+
+def test_markdown_to_docx_preserves_blank_lines_and_indent():
+    import io
+
+    from docx import Document
+
+    from app.services.document_convert import markdown_to_docx
+
+    content = "첫 문단\n\n\n    들여쓴 줄\n끝"
+    docx_bytes = markdown_to_docx(content, title="테스트")
+    doc = Document(io.BytesIO(docx_bytes))
+    body_texts = [paragraph.text for paragraph in doc.paragraphs[1:]]
+
+    assert body_texts[0] == "첫 문단"
+    assert body_texts[1] == ""
+    assert body_texts[2] == ""
+    assert body_texts[3] == "    들여쓴 줄"
+    assert body_texts[4] == "끝"
+
+
+def test_extract_docx_text_preserves_blank_lines():
+    import io
+
+    from docx import Document
+
+    from app.services.document_convert import extract_docx_text
+
+    doc = Document()
+    doc.add_paragraph("A")
+    doc.add_paragraph("")
+    doc.add_paragraph("    B")
+    buffer = io.BytesIO()
+    doc.save(buffer)
+
+    text = extract_docx_text(buffer.getvalue())
+    assert text == "A\n\n    B"
+
+
+def test_roundtrip_blank_lines_through_hwpx():
+    from app.services.document_convert import extract_hwpx_text, markdown_to_hwpx
+
+    content = "위\n\n아래"
+    hwpx = markdown_to_hwpx(content, title="제목")
+    text = extract_hwpx_text(hwpx)
+    assert "위" in text
+    assert "아래" in text
+    assert "\n\n" in text or text.count("\n") >= 2
+
+
+def test_get_document_preview_info_pdf(db_session):
+    from app.models.document import DocumentModel
+
+    row = DocumentModel(
+        id="doc-pdf",
+        user_id="user-1",
+        title="보고서",
+        original_filename="report.pdf",
+        source_format="pdf",
+        output_format=None,
+        source_object_key="users/user-1/documents/doc-pdf/source/report.pdf",
+        output_object_key=None,
+        status="uploaded",
+        file_size=2048,
+        mime_type="application/pdf",
+        error_message=None,
+        created_at=DocumentModel.utcnow(),
+        updated_at=DocumentModel.utcnow(),
+    )
+    db_session.add(row)
+    db_session.commit()
+
+    info = document_service.get_document_preview_info(db_session, "user-1", "doc-pdf")
+    assert info["preview_mode"] == "pdf"
+    assert info["preview_format"] == "pdf"
+    assert info["use_output"] is False
+
+
     from unittest.mock import patch
 
     from app.services.document_convert import extract_hwpx_text

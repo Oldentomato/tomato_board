@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     minio_bucket: str = "documents"
     minio_secure: bool = False
     minio_use_local_storage: bool = False
+    qdrant_url: str = "http://localhost:6333"
+    embedding_chunk_size: int = 1000
+    embedding_chunk_overlap: int = 200
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -58,6 +61,10 @@ class Settings(BaseSettings):
             and self.minio_access_key.strip()
             and self.minio_secret_key.strip()
         )
+
+    @property
+    def qdrant_configured(self) -> bool:
+        return bool(self.qdrant_url.strip())
 
 
 @lru_cache

@@ -10,6 +10,7 @@ import { handleAuthFailure } from "./authRedirect";
 import type {
   ConvertDocumentInput,
   Document,
+  DocumentContent,
   DocumentsResponse,
 } from "@/lib/types/document";
 
@@ -90,6 +91,40 @@ export async function uploadDocument(file: File, title?: string) {
 export function deleteDocument(documentId: string) {
   if (isMockMode()) return mockDeleteDocument(documentId);
   return fetchDocuments<void>(`/documents/${documentId}`, { method: "DELETE" });
+}
+
+export function fetchDocumentContent(documentId: string) {
+  if (isMockMode()) {
+    throw new ApiError(501, "Mock 모드에서는 문서 내용 API를 지원하지 않습니다.");
+  }
+  return fetchDocuments<DocumentContent>(`/documents/${documentId}/content`);
+}
+
+export async function fetchDocumentBlob(documentId: string, useOutput: boolean) {
+  if (isMockMode()) {
+    throw new ApiError(501, "Mock 모드에서는 파일 API를 지원하지 않습니다.");
+  }
+
+  const url = buildApiUrl(`/documents/${documentId}/file`, {
+    use_output: useOutput ? "true" : "false",
+  });
+  const response = await fetch(url, { credentials: "include" });
+
+  if (response.status === 401) {
+    const errorText = await response.text().catch(() => "Unauthorized");
+    handleAuthFailure(401, errorText);
+    throw new ApiError(401, errorText || "Unauthorized");
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Request failed");
+    throw new ApiError(response.status, errorText || response.statusText);
+  }
+
+  return {
+    blob: await response.blob(),
+    mimeType: response.headers.get("content-type") ?? "application/octet-stream",
+  };
 }
 
 async function fetchDocuments<T>(path: string, init?: RequestInit): Promise<T> {

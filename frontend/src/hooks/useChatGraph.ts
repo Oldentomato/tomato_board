@@ -15,7 +15,9 @@ import {
   type ChatRoomsResponse,
 } from "@/lib/api/chat";
 import { buildAgUiMessages } from "@/lib/chat/agUiMessages";
+import { parsePreviewDocumentToolOutput } from "@/lib/chat/documentPreview";
 import { isMockMode } from "@/lib/config/env";
+import { getDocuments } from "@/lib/api/documents";
 import {
   DOCUMENTS_QUERY_KEY,
   shouldRefreshDocumentsForTool,
@@ -28,6 +30,7 @@ import {
   type ChatGraph,
   type ChatMessageNode,
 } from "@/lib/types/chat";
+import type { DocumentPreviewPayload } from "@/lib/types/document";
 
 function getPathToRoot(graph: ChatGraph, nodeId: string): ChatMessageNode[] {
   const path: ChatMessageNode[] = [];
@@ -70,6 +73,18 @@ export function useChatGraph() {
   const [isSending, setIsSending] = useState(false);
   const [streamingNodeId, setStreamingNodeId] = useState<string | null>(null);
   const [agentActivity, setAgentActivity] = useState<AgentActivityState>(IDLE_AGENT_ACTIVITY);
+  const [documentPreviewsByMessageId, setDocumentPreviewsByMessageId] = useState<
+    Record<string, DocumentPreviewPayload[]>
+  >({});
+
+  const attachPreviewToMessage = useCallback((messageId: string, output: string | null | undefined) => {
+    const payload = parsePreviewDocumentToolOutput(output);
+    if (!payload || payload.error || !payload.preview_mode) return;
+    setDocumentPreviewsByMessageId((prev) => ({
+      ...prev,
+      [messageId]: [...(prev[messageId] ?? []), payload],
+    }));
+  }, []);
 
   const roomsQuery = useQuery({
     queryKey: roomsKey,
@@ -250,6 +265,9 @@ export function useChatGraph() {
             });
             setAgentActivity((prev) => ({ ...prev, tools }));
             invalidateDocumentsIfNeeded(toolName);
+            if (toolName === "preview_document" || parsePreviewDocumentToolOutput(output ?? null)?.preview_mode) {
+              attachPreviewToMessage(assistantNodeId, output ?? null);
+            }
           },
           onStepStart: ({ stepName }) => {
             setAgentActivity((prev) => ({
@@ -272,7 +290,7 @@ export function useChatGraph() {
         },
       );
     },
-    [queryClient, selectedAgentId, invalidateChat, invalidateDocumentsIfNeeded],
+    [queryClient, selectedAgentId, invalidateChat, invalidateDocumentsIfNeeded, attachPreviewToMessage],
   );
 
   const sendMessageViaAgUi = useCallback(
@@ -350,8 +368,11 @@ export function useChatGraph() {
             const raw = "content" in event ? event.content : null;
             const content =
               typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
+            const existing = tools.find((tool) => tool.id === event.toolCallId);
             const toolName = String(
-              ("toolCallName" in event && event.toolCallName) || "tool",
+              ("toolCallName" in event && event.toolCallName) ||
+                existing?.toolName ||
+                "tool",
             );
             tools = upsertTool(tools, {
               id: event.toolCallId,
@@ -361,6 +382,9 @@ export function useChatGraph() {
             });
             setAgentActivity((prev) => ({ ...prev, tools }));
             invalidateDocumentsIfNeeded(toolName);
+            if (toolName === "preview_document" || parsePreviewDocumentToolOutput(content)?.preview_mode) {
+              attachPreviewToMessage(assistantNodeId, content);
+            }
           },
           onRunErrorEvent: ({ event }) => {
             setAgentActivity((prev) => ({
@@ -392,7 +416,7 @@ export function useChatGraph() {
       });
       await invalidateChat();
     },
-    [agent, queryClient, selectedAgentId, updateAssistantNode, invalidateChat, invalidateDocumentsIfNeeded],
+    [agent, queryClient, selectedAgentId, updateAssistantNode, invalidateChat, invalidateDocumentsIfNeeded, attachPreviewToMessage],
   );
 
   const ensureRoomContext = useCallback(async (): Promise<{ roomId: string; parentId: string }> => {
@@ -433,6 +457,13 @@ export function useChatGraph() {
       try {
         const { roomId, parentId } = await ensureRoomContext();
 
+        if (selectedAgentId === "document") {
+          await queryClient.fetchQuery({
+            queryKey: DOCUMENTS_QUERY_KEY,
+            queryFn: getDocuments,
+          });
+        }
+
         if (isMockMode()) {
           await sendMessageViaStream(roomId, parentId, trimmed);
         } else {
@@ -457,7 +488,8 @@ export function useChatGraph() {
       isSending,
       ensureRoomContext,
       sendMessageViaStream,
-      sendMessageViaAgUi,
+      selectedAgentId,
+      queryClient,
     ],
   );
 
@@ -518,6 +550,7 @@ export function useChatGraph() {
     activePath,
     branchContext,
     agentActivity,
+    documentPreviewsByMessageId,
     selectRoom,
     selectNode,
     createRoom,

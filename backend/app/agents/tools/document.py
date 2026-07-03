@@ -11,6 +11,7 @@ from app.agents.context import get_current_user_id
 from app.database import SessionLocal
 from app.schemas import ConvertDocumentInput
 from app.services import documents as document_service
+from app.agents.tools.rag import search_embedded_documents
 
 
 @tool
@@ -56,18 +57,13 @@ def list_user_documents() -> str:
 
 
 @tool
-def fetch_document_from_storage(document_id: str) -> str:
-    """MySQL 메타데이터와 저장소에서 문서 텍스트를 추출해 가져옵니다 (md/txt/docx/hwpx/hwp 지원)."""
+def preview_document(document_id: str) -> str:
+    """문서 미리보기 UI를 채팅에 표시합니다. 본문은 LLM에 전달하지 않고 프론트엔드가 파일 API로 로드합니다."""
     user_id = get_current_user_id()
     db = SessionLocal()
     try:
-        data = document_service.fetch_document_content_resolved(db, user_id, document_id)
-        if data.get("error"):
-            return json.dumps(data, ensure_ascii=False)
-        preview = data["content"]
-        if len(preview) > 4000:
-            preview = preview[:4000] + "\n...(이하 생략)"
-        return json.dumps({**data, "content": preview}, ensure_ascii=False)
+        data = document_service.get_document_preview_info(db, user_id, document_id)
+        return json.dumps(data, ensure_ascii=False)
     except HTTPException as exc:
         detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
         return json.dumps(
@@ -152,7 +148,8 @@ def get_document_tools():
     return [
         get_user_storage_path,
         list_user_documents,
-        fetch_document_from_storage,
+        preview_document,
         convert_content_to_document,
         convert_uploaded_document,
+        search_embedded_documents,
     ]

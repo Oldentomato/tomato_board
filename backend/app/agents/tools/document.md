@@ -1,7 +1,7 @@
 # document 에이전트 도구
 
-`document` 에이전트(`app/agents/document/graph.py`)에 연결된 LangChain 도구 목록입니다.  
-구현: `app/agents/tools/document.py` — **도구 5개**
+`document` (문서관리) 에이전트(`app/agents/document/graph.py`)에 연결된 LangChain 도구 목록입니다.  
+구현: `app/agents/tools/document.py`, `app/agents/tools/rag.py` — **도구 6개**
 
 모든 도구는 **현재 로그인 사용자**만 접근합니다 (`user_id`는 세션에서 자동 주입).  
 반환값은 모두 **JSON 문자열**입니다.
@@ -63,10 +63,10 @@
 
 ---
 
-## 3. `fetch_document_from_storage`
+## 3. `preview_document`
 
 **용도**  
-문서 본문 텍스트를 추출해 가져옵니다. DB에서 메타데이터를 확인한 뒤 저장소에서 파일을 읽고 형식에 맞게 텍스트로 변환합니다.
+채팅 UI에 문서 미리보기 패널을 표시합니다. LLM에는 메타데이터만 전달하고, 실제 파일은 프론트엔드가 `GET /api/documents/{id}/file` 또는 `/content`로 로드합니다.
 
 **입력**
 
@@ -80,24 +80,25 @@
 {
   "document_id": "uuid",
   "title": "문서 제목",
-  "source_format": "markdown",
-  "output_format": "hwpx",
-  "content_format": "markdown | docx | hwpx | ...",
-  "status": "converted",
-  "content": "추출된 본문 텍스트 (최대 4000자, 초과 시 '...(이하 생략)')",
+  "source_format": "pdf",
+  "output_format": null,
+  "preview_format": "pdf",
+  "preview_mode": "pdf | text | extracted_text",
+  "use_output": false,
+  "mime_type": "application/pdf",
   "file_size": 12345,
-  "object_key": "users/.../documents/.../source/content.md"
+  "status": "uploaded",
+  "message": "'문서 제목' 문서 미리보기를 채팅에 표시했습니다."
 }
 ```
 
-**텍스트 추출 규칙**
+**미리보기 모드**
 
-| 형식 | 처리 |
-|------|------|
-| `md`, `txt`, `markdown` | UTF-8 텍스트 그대로 |
-| `docx` | `python-docx`로 단락 추출 |
-| `hwpx`, `hwp` | ZIP 내 `Preview/PrvText.txt` 또는 `section0.xml`에서 추출 |
-| AI 변환 문서 | 원본 `content.md` 우선 사용 |
+| `preview_mode` | UI 처리 |
+|----------------|---------|
+| `pdf` | PDF 뷰어 (`/file` blob) |
+| `text` | 텍스트 패널 (`/file` blob) |
+| `extracted_text` | 추출 텍스트 패널 (`/content` API) |
 
 ---
 
@@ -156,10 +157,44 @@ UI 등으로 이미 업로드된 문서를 Word 또는 한글 형식으로 변�
 
 ---
 
+## 6. `search_embedded_documents`
+
+**용도**  
+Qdrant에 임베딩된 문서에서 시맨틱 검색을 수행합니다. 문서 패널 임베딩 탭에서 인덱싱한 문서만 검색 대상입니다.
+
+**입력**
+
+| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
+|----------|------|------|--------|------|
+| `query` | `str` | O | — | 검색 질문 |
+| `top_k` | `int` | X | `5` | 반환할 청크 수 (1~10) |
+
+**출력** (JSON)
+
+```json
+{
+  "query": "검색 질문",
+  "result_count": 3,
+  "results": [
+    {
+      "score": 0.85,
+      "document_id": "uuid",
+      "title": "문서 제목",
+      "text": "관련 청크 내용..."
+    }
+  ]
+}
+```
+
+검색 결과가 없으면 임베딩 여부 안내 메시지가 포함됩니다.
+
+---
+
 ## 일반 워크플로
 
 1. **목록** → `list_user_documents`
-2. **내용 확인** → `fetch_document_from_storage`
+2. **미리보기** → `preview_document`
 3. **새로 저장/변환** → `convert_content_to_document` 또는 `convert_uploaded_document`
-4. **다운로드** → 채팅 UI 문서 패널의 다운로드 버튼 (`GET /api/documents/{id}/file`)
-5. **저장 경로 문의** → `get_user_storage_path`
+4. **임베딩 문서 검색** → `search_embedded_documents`
+5. **다운로드** → 채팅 UI 문서 패널의 다운로드 버튼 (`GET /api/documents/{id}/file`)
+6. **저장 경로 문의** → `get_user_storage_path`

@@ -13,6 +13,7 @@ import {
 import { useAgent, useAgentContext } from "@copilotkit/react-core/v2";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
+import { parsePreviewDocumentToolOutput } from "@/lib/chat/documentPreview";
 import type { AgentActivityState, AgentToolActivity } from "@/lib/types/chat";
 import { IDLE_AGENT_ACTIVITY } from "@/lib/types/chat";
 import { cn } from "@/lib/utils/cn";
@@ -23,18 +24,37 @@ function formatToolName(name: string) {
   return name.replace(/_/g, " ");
 }
 
+const TOOL_DETAIL_COLLAPSE_CHARS = 480;
+
+function getToolDetailLength(tool: AgentToolActivity): number {
+  const inputLen = tool.input ? JSON.stringify(tool.input).length : 0;
+  const outputLen = tool.output?.length ?? 0;
+  return inputLen + outputLen;
+}
+
 function ToolRow({ tool }: { tool: AgentToolActivity }) {
   const theme = useSkyTheme();
   const running = tool.status === "running";
+  const previewPayload =
+    tool.toolName === "preview_document" && !running
+      ? parsePreviewDocumentToolOutput(tool.output)
+      : null;
   const hasDetails =
-    (tool.input && Object.keys(tool.input).length > 0) || Boolean(tool.output?.trim());
+    (tool.input && Object.keys(tool.input).length > 0) ||
+    Boolean(tool.output?.trim()) ||
+    Boolean(previewPayload);
+  const isLongContent = getToolDetailLength(tool) > TOOL_DETAIL_COLLAPSE_CHARS;
   const [open, setOpen] = useState(running);
 
   useEffect(() => {
     if (running) {
       setOpen(true);
+      return;
     }
-  }, [running]);
+    if (isLongContent) {
+      setOpen(false);
+    }
+  }, [running, isLongContent]);
 
   return (
     <div
@@ -68,6 +88,9 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
         >
           {running ? "실행 중" : "완료"}
         </span>
+        {!running && isLongContent && !open && (
+          <span className={cn("text-[10px]", theme.faint)}>내용 길음</span>
+        )}
         {hasDetails && (
           <ChevronDown
             className={cn(
@@ -89,8 +112,16 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
           )}
           {tool.output && !running && (
             <div className={tool.input && Object.keys(tool.input).length > 0 ? "mt-2" : undefined}>
-              <p className={cn("mb-1 text-[10px] font-medium", theme.faint)}>결과</p>
-              <p className={cn("whitespace-pre-wrap break-words text-[10px]", theme.faint)}>{tool.output}</p>
+              {previewPayload ? (
+                <p className={cn("text-[10px]", theme.faint)}>
+                  &apos;{previewPayload.title}&apos; 미리보기가 응답 아래에 표시됩니다.
+                </p>
+              ) : (
+                <>
+                  <p className={cn("mb-1 text-[10px] font-medium", theme.faint)}>결과</p>
+                  <p className={cn("whitespace-pre-wrap break-words text-[10px]", theme.faint)}>{tool.output}</p>
+                </>
+              )}
             </div>
           )}
         </div>

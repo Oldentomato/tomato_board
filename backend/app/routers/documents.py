@@ -10,6 +10,7 @@ from app.http_utils import attachment_content_disposition
 from app.schemas import (
     ConvertDocumentInput,
     Document,
+    DocumentContentResponse,
     DocumentsResponse,
     User,
     UserStorageInfo,
@@ -72,6 +73,36 @@ async def convert_existing_document(
         user.id,
         document_id,
         target_format,
+    )
+
+
+@router.get("/{document_id}/content", response_model=DocumentContentResponse)
+async def get_document_content(
+    document_id: str,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    data = await run_in_threadpool(
+        document_service.fetch_document_content_resolved,
+        db,
+        user.id,
+        document_id,
+    )
+    if data.get("error"):
+        raise HTTPException(status_code=404, detail=data["error"])
+    if data.get("extract_error") or not (data.get("content") or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail=data.get("extract_error") or "문서에서 텍스트를 추출할 수 없습니다.",
+        )
+    return DocumentContentResponse(
+        documentId=data["document_id"],
+        title=data["title"],
+        sourceFormat=data["source_format"],
+        outputFormat=data.get("output_format"),
+        contentFormat=data.get("content_format") or data["source_format"],
+        content=data["content"],
+        status=data["status"],
     )
 
 

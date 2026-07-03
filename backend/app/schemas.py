@@ -203,8 +203,51 @@ class ConvertDocumentInput(BaseModel):
     target_format: str = "docx"
 
 
+class DocumentContentResponse(BaseModel):
+    documentId: str
+    title: str
+    sourceFormat: str
+    outputFormat: Optional[str] = None
+    contentFormat: str
+    content: str
+    status: str
+
+
 class UserStorageInfo(BaseModel):
     userId: str
     storagePrefix: str
     createdAt: str
     updatedAt: str
+
+
+class EmbeddedDocument(BaseModel):
+    id: str
+    documentId: str
+    title: str
+    chunkCount: int
+    status: str
+    errorMessage: Optional[str] = None
+    embeddedAt: Optional[str] = None
+    createdAt: str
+    updatedAt: str
+
+
+class EmbeddingIndex(BaseModel):
+    id: str
+    embeddingModel: str
+    qdrantCollection: str
+    documents: list[EmbeddedDocument]
+    documentCount: int
+    indexedCount: int
+    createdAt: str
+    updatedAt: str
+
+
+class EmbeddingIndexesResponse(BaseModel):
+    indexes: list[EmbeddingIndex]
+
+
+class EmbedDocumentsInput(BaseModel):
+    document_ids: list[str] = Field(alias="documentIds")
+
+    model_config = ConfigDict(populate_by_name=True)

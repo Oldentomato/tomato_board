@@ -1,9 +1,9 @@
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, Response, StreamingResponse
 
-from app.agents.context import set_current_user_id
+from app.agents.context import reset_current_user_id, set_current_user_id
 from app.dependencies import (
     REAUTH_DETAIL,
     clear_session,
@@ -28,6 +28,25 @@ def requires_google_auth(path: str, method: str) -> bool:
     return not any(path.startswith(prefix) for prefix in PUBLIC_PATH_PREFIXES)
 
 
+def _wrap_streaming_response(response: StreamingResponse, ctx_token) -> StreamingResponse:
+    body = response.body_iterator
+
+    async def stream_with_context():
+        try:
+            async for chunk in body:
+                yield chunk
+        finally:
+            reset_current_user_id(ctx_token)
+
+    return StreamingResponse(
+        stream_with_context(),
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.media_type,
+        background=response.background,
+    )
+
+
 class GoogleAuthMiddleware(BaseHTTPMiddleware):
     """보호된 API는 유효한 Google OAuth 세션(사용자 + 토큰)이 있을 때만 통과시킨다."""
 
@@ -44,8 +63,18 @@ class GoogleAuthMiddleware(BaseHTTPMiddleware):
             return JSONResponse(status_code=401, content={"detail": REAUTH_DETAIL})
 
         user = get_session_user(request)
-        set_current_user_id(user.id if user else None)
+        user_id = user.id if user else None
+        request.state.user_id = user_id
+        ctx_token = set_current_user_id(user_id)
+
         try:
-            return await call_next(request)
-        finally:
-            set_current_user_id(None)
+            response = await call_next(request)
+        except Exception:
+            reset_current_user_id(ctx_token)
+            raise
+
+        if isinstance(response, StreamingResponse):
+            return _wrap_streaming_response(response, ctx_token)
+
+        reset_current_user_id(ctx_token)
+        return response

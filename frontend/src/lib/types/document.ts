@@ -24,6 +24,32 @@ export type ConvertDocumentInput = {
   target_format?: string;
 };
 
+export type DocumentPreviewPayload = {
+  document_id: string;
+  title?: string;
+  source_format?: string;
+  output_format?: string | null;
+  preview_format?: string;
+  preview_mode?: "pdf" | "text" | "extracted_text" | string;
+  use_output?: boolean;
+  mime_type?: string;
+  file_size?: number;
+  status?: string;
+  message?: string;
+  resolved_from_stale_id?: string;
+  error?: string;
+};
+
+export type DocumentContent = {
+  documentId: string;
+  title: string;
+  sourceFormat: string;
+  outputFormat?: string | null;
+  contentFormat: string;
+  content: string;
+  status: string;
+};
+
 export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
   uploaded: "업로드됨",
   converted: "변환 완료",
@@ -38,6 +64,7 @@ export const FORMAT_LABELS: Record<string, string> = {
   word: "Word",
   hwpx: "한글",
   hwp: "한글",
+  pdf: "PDF",
 };
 
 export function formatFileSize(bytes: number): string {

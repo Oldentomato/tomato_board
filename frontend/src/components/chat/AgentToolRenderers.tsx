@@ -1,12 +1,14 @@
 "use client";
 
 import { useDefaultRenderTool } from "@copilotkit/react-core/v2";
+import { useDocumentPreviewToolRenderer } from "@/components/chat/useDocumentPreviewToolRenderer";
 
 /**
- * CopilotKit 기본 도구 호출 렌더러 등록.
- * AG-UI 프로토콜로 수신한 tool call 이벤트를 상태 카드로 표시합니다.
+ * CopilotKit 도구 호출 UI.
+ * preview_document는 문서 미리보기 패널, 나머지는 기본 카드로 표시합니다.
  */
 export function AgentToolRenderers() {
+  useDocumentPreviewToolRenderer();
   useDefaultRenderTool();
   return null;
 }

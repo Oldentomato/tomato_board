@@ -55,6 +55,10 @@ def _detect_source_format(filename: str, content_type: str | None) -> str:
         return "hwpx"
     if suffix == "hwp":
         return "hwp"
+    if suffix == "pdf":
+        return "pdf"
+    if content_type and "pdf" in content_type:
+        return "pdf"
     if content_type and "markdown" in content_type:
         return "markdown"
     if content_type and "text" in content_type:
@@ -156,6 +160,46 @@ def fetch_document_content_resolved(db: Session, user_id: str, document_id: str)
         data["resolved_from_stale_id"] = document_id
         data["document_id"] = resolved
     return data
+
+
+def get_document_preview_info(db: Session, user_id: str, document_id: str) -> dict:
+    resolved = resolve_document_id(db, user_id, document_id)
+    if isinstance(resolved, dict):
+        return {"document_id": document_id, **resolved}
+
+    row = _get_document_row(db, user_id, resolved)
+    use_output = bool(row.output_object_key and row.output_format)
+    preview_format = row.output_format if use_output else row.source_format
+
+    if preview_format == "pdf":
+        preview_mode = "pdf"
+    elif preview_format in document_convert.TEXT_FORMATS:
+        preview_mode = "text"
+    else:
+        preview_mode = "extracted_text"
+
+    mime_type = (
+        document_convert.MIME_BY_FORMAT.get(row.output_format or "", row.mime_type or "")
+        if use_output
+        else row.mime_type or "application/octet-stream"
+    )
+
+    payload = {
+        "document_id": resolved,
+        "title": row.title,
+        "source_format": row.source_format,
+        "output_format": row.output_format,
+        "preview_format": preview_format or row.source_format,
+        "preview_mode": preview_mode,
+        "use_output": use_output,
+        "mime_type": mime_type,
+        "file_size": row.file_size,
+        "status": row.status,
+        "message": f"'{row.title}' 문서 미리보기를 채팅에 표시했습니다.",
+    }
+    if resolved != document_id:
+        payload["resolved_from_stale_id"] = document_id
+    return payload
 
 
 def list_documents(db: Session, user_id: str) -> DocumentsResponse:
@@ -280,7 +324,7 @@ def convert_and_save_document(
     storage.ensure_bucket()
     storage_info = get_or_create_user_storage(db, user_id)
 
-    content = input_data.content.strip()
+    content = document_convert._normalize_document_content(input_data.content)
     title = input_data.title.strip() or "문서"
     if not content:
         raise HTTPException(status_code=400, detail="변환할 내용이 비어 있습니다.")
@@ -337,7 +381,7 @@ def convert_existing_document(
     row = _get_document_row(db, user_id, document_id)
     fetched = fetch_document_content(db, user_id, document_id)
 
-    content = fetched.get("content", "").strip()
+    content = document_convert._normalize_document_content(fetched.get("content", ""))
     if fetched.get("extract_error") or not content:
         raise HTTPException(
             status_code=400,
@@ -399,6 +443,9 @@ def get_document_file(
 
 
 def delete_document(db: Session, user_id: str, document_id: str) -> None:
+    from app.services import rag as rag_service
+
+    rag_service.cleanup_document_embeddings(db, user_id, document_id)
     row = _get_document_row(db, user_id, document_id)
     for key in (row.source_object_key, row.output_object_key):
         if key:

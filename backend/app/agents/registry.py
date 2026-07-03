@@ -21,6 +21,9 @@ class AgentDefinition:
     factory: GraphFactory
 
 
+_AGENT_ALIASES: dict[str, str] = {
+    "rag": "document",
+}
 _REGISTRY: dict[str, AgentDefinition] = {}
 _COMPILED: dict[str, CompiledStateGraph] = {}
 
@@ -46,9 +49,10 @@ def register_agent(
 def resolve_agent_id(agent_id: str | None) -> str:
     if not agent_id or agent_id == DEFAULT_AGENT_ID:
         return DEFAULT_AGENT_ID
-    if agent_id not in _REGISTRY:
+    resolved = _AGENT_ALIASES.get(agent_id, agent_id)
+    if resolved not in _REGISTRY:
         raise HTTPException(status_code=404, detail=f"Unknown agent: {agent_id}")
-    return agent_id
+    return resolved
 
 
 def get_compiled_graph(agent_id: str | None) -> CompiledStateGraph:

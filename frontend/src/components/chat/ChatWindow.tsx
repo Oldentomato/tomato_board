@@ -7,9 +7,10 @@ import { Bot, FileText, MessagesSquare, Send, User } from "lucide-react";
 import { useAgentContext } from "@copilotkit/react-core/v2";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
+import { useDocuments } from "@/hooks/useDocuments";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { ChatAgentStatusPanel } from "@/components/chat/ChatAgentStatusPanel";
-import { AgentToolRenderers } from "@/components/chat/AgentToolRenderers";
+import { DocumentPreviewPanel } from "@/components/chat/DocumentPreviewPanel";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -17,10 +18,11 @@ import { cn } from "@/lib/utils/cn";
  * AG-UI 에이전트 연동 시 동일 컨텍스트로 Neo4j 분기 상태를 전달할 수 있습니다.
  */
 function BranchContextSync() {
-  const { branchContext, activePath } = useChatGraphContext();
+  const { branchContext, activePath, selectedAgentId } = useChatGraphContext();
+  const { documents } = useDocuments();
 
   useAgentContext({
-    description: "Neo4j 기반 채팅 분기 컨텍스트 (roomId, activeNodeId, path)",
+    description: "Neo4j 기반 채팅 분기 컨텍스트 및 문서 패널 동기화",
     value: branchContext
       ? {
           chatBranch: branchContext,
@@ -28,8 +30,31 @@ function BranchContextSync() {
             role: m.role,
             content: m.content,
           })),
+          ...(selectedAgentId === "document"
+            ? {
+                uploadedDocuments: documents.map((doc) => ({
+                  id: doc.id,
+                  title: doc.title,
+                  sourceFormat: doc.sourceFormat,
+                  status: doc.status,
+                })),
+              }
+            : {}),
         }
-      : { chatBranch: null, activeMessages: [] },
+      : {
+          chatBranch: null,
+          activeMessages: [],
+          ...(selectedAgentId === "document"
+            ? {
+                uploadedDocuments: documents.map((doc) => ({
+                  id: doc.id,
+                  title: doc.title,
+                  sourceFormat: doc.sourceFormat,
+                  status: doc.status,
+                })),
+              }
+            : {}),
+        },
   });
 
   return null;
@@ -53,7 +78,7 @@ export function ChatWindow({
   onCloseDocuments?: () => void;
 }) {
   const theme = useSkyTheme();
-  const { activePath, branchContext, sendMessage, selectedRoomId, isSending, streamingNodeId, agents, selectedAgentId, setSelectedAgentId, agentActivity } =
+  const { activePath, branchContext, sendMessage, selectedRoomId, isSending, streamingNodeId, agents, selectedAgentId, setSelectedAgentId, agentActivity, documentPreviewsByMessageId } =
     useChatGraphContext();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -101,7 +126,6 @@ export function ChatWindow({
       }}
     >
       <BranchContextSync />
-      <AgentToolRenderers />
 
       <header
         className={cn(
@@ -121,7 +145,7 @@ export function ChatWindow({
               <p className={cn("mt-0.5 text-[11px]", theme.faint)}>대화를 시작해 보세요</p>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {agents.length > 0 && (
               <select
                 value={selectedAgentId ?? ""}
@@ -198,6 +222,7 @@ export function ChatWindow({
           activePath.map((message) => {
             const isUser = message.role === "user";
             const isStreaming = streamingNodeId === message.id;
+            const messagePreviews = documentPreviewsByMessageId[message.id] ?? [];
             return (
               <div
                 key={message.id}
@@ -230,6 +255,16 @@ export function ChatWindow({
                   ) : (
                     <div className={theme.text}>
                       <ChatMarkdown content={message.content} />
+                      {messagePreviews.length > 0 && (
+                        <div className="mt-3 space-y-3">
+                          {messagePreviews.map((preview, index) => (
+                            <DocumentPreviewPanel
+                              key={`${preview.document_id}-${index}`}
+                              payload={preview}
+                            />
+                          ))}
+                        </div>
+                      )}
                       {isStreaming && (
                         <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-violet-500 align-middle" />
                       )}

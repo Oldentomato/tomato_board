@@ -19,11 +19,12 @@ function createRuntimeHandler(cookieHeader: string): CopilotRuntimeFetchHandler 
         url: getAgUiAgentUrl("general"),
         headers: backendHeaders,
       }),
-      debug: new LangGraphHttpAgent({
-        url: getAgUiAgentUrl("debug"),
+      document: new LangGraphHttpAgent({
+        url: getAgUiAgentUrl("document"),
         headers: backendHeaders,
       }),
-      document: new LangGraphHttpAgent({
+      // legacy alias — merged into document agent
+      rag: new LangGraphHttpAgent({
         url: getAgUiAgentUrl("document"),
         headers: backendHeaders,
       }),
