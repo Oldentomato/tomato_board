@@ -28,10 +28,11 @@ def requires_google_auth(path: str, method: str) -> bool:
     return not any(path.startswith(prefix) for prefix in PUBLIC_PATH_PREFIXES)
 
 
-def _wrap_streaming_response(response: StreamingResponse, ctx_token) -> StreamingResponse:
+def _wrap_streaming_response(response: StreamingResponse, user_id: str | None) -> StreamingResponse:
     body = response.body_iterator
 
     async def stream_with_context():
+        ctx_token = set_current_user_id(user_id)
         try:
             async for chunk in body:
                 yield chunk
@@ -74,7 +75,8 @@ class GoogleAuthMiddleware(BaseHTTPMiddleware):
             raise
 
         if isinstance(response, StreamingResponse):
-            return _wrap_streaming_response(response, ctx_token)
+            reset_current_user_id(ctx_token)
+            return _wrap_streaming_response(response, user_id)
 
         reset_current_user_id(ctx_token)
         return response

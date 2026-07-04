@@ -12,6 +12,7 @@ from app.agents.runner import llm_configured
 from app.agents.agui import mount_agui_agents
 from app.middleware import GoogleAuthMiddleware
 from app.routers import auth, calendar, chat, documents, embeddings, mail, memos, weather
+from app.services.weather import close_weather_client
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ async def lifespan(_app: FastAPI):
     )
     logger.info("Qdrant vector store: %s", settings.qdrant_configured)
     yield
+    await close_weather_client()
     close_neo4j()
 
 

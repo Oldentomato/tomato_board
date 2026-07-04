@@ -7,12 +7,7 @@ from ag_ui.core.types import RunAgentInput
 from ag_ui.encoder import EventEncoder
 from copilotkit import LangGraphAGUIAgent
 
-from app.agents.context import (
-    bind_run_user_id,
-    clear_run_user_id,
-    reset_current_user_id,
-    set_current_user_id,
-)
+from app.agents.context import bind_run_user_id, clear_run_user_id
 from app.agents.registry import get_compiled_graph, list_agents
 from app.dependencies import get_session_user
 
@@ -26,7 +21,6 @@ def _register_agui_endpoint(app: FastAPI, agent: LangGraphAGUIAgent, path: str) 
 
         thread_id = input_data.thread_id
         bind_run_user_id(user.id, thread_id=thread_id)
-        ctx_token = set_current_user_id(user.id)
 
         accept_header = request.headers.get("accept")
         encoder = EventEncoder(accept=accept_header)
@@ -38,7 +32,6 @@ def _register_agui_endpoint(app: FastAPI, agent: LangGraphAGUIAgent, path: str) 
                     yield encoder.encode(event)
             finally:
                 clear_run_user_id(thread_id=thread_id)
-                reset_current_user_id(ctx_token)
 
         return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
 
