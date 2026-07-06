@@ -24,6 +24,11 @@ const light: Omit<SkyTheme, "id" | "gradient" | "glow" | "cloudOpacity" | "rain"
   icon: "text-slate-800",
 };
 
+/** 채팅 패널 등 반투명 흰 배경 UI — 날씨와 무관하게 항상 어두운 텍스트 */
+export type ChatUiTheme = Pick<SkyTheme, "text" | "muted" | "faint" | "sidebarBorder" | "icon">;
+
+export const chatUiTheme: ChatUiTheme = { ...light };
+
 const dark: Omit<SkyTheme, "id" | "gradient" | "glow" | "cloudOpacity" | "rain" | "snow" | "isDark"> = {
   text: "text-white",
   muted: "text-white/90",

@@ -14,7 +14,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { chatUiTheme } from "@/lib/weather/skyTheme";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useEmbeddings } from "@/hooks/useEmbeddings";
 import type { Document } from "@/lib/types/document";
@@ -80,7 +80,7 @@ function DocumentRow({
   selected?: boolean;
   onToggleSelect?: () => void;
 }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const formatLabel = doc.outputFormat
     ? FORMAT_LABELS[doc.outputFormat] ?? doc.outputFormat
     : FORMAT_LABELS[doc.sourceFormat] ?? doc.sourceFormat;
@@ -177,7 +177,7 @@ function EmbeddedDocumentRow({
   onRemove: (indexId: string, documentId: string) => void;
   isRemoving: boolean;
 }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
 
   return (
     <div className="flex items-start gap-2 rounded-lg border px-2 py-1.5">
@@ -216,7 +216,7 @@ export function ChatDocumentDrawer({
   onClose: () => void;
   className?: string;
 }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<DrawerTab>("documents");
   const [downloadingId, setDownloadingId] = useState<string | null>(null);

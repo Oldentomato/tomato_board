@@ -13,7 +13,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { GitBranch, Move } from "lucide-react";
 import { TurnFlowNode, type TurnFlowNodeData } from "@/components/chat/TurnFlowNode";
-import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { chatUiTheme } from "@/lib/weather/skyTheme";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import { graphToFlowEdges, graphToFlowNodes, graphTopologyKey } from "@/lib/chat/graphToFlow";
 import { cn } from "@/lib/utils/cn";
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils/cn";
 const nodeTypes = { turn: TurnFlowNode } satisfies NodeTypes;
 
 export function ChatHistoryTree({ className }: { className?: string }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const { selectedGraph, activeNodeId, branchContext, selectNode } = useChatGraphContext();
   const flowRef = useRef<ReactFlowInstance<Node<TurnFlowNodeData>, Edge> | null>(null);
 

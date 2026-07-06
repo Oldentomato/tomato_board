@@ -4,7 +4,7 @@ import { memo } from "react";
 import { format, parseISO } from "date-fns";
 import { Bot, GitBranch, User } from "lucide-react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { chatUiTheme } from "@/lib/weather/skyTheme";
 import type { TurnTreeNode } from "@/lib/chat/turnTree";
 import { cn } from "@/lib/utils/cn";
 
@@ -15,7 +15,7 @@ export type TurnFlowNodeData = {
 };
 
 function TurnFlowNodeComponent({ data }: NodeProps<Node<TurnFlowNodeData>>) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const { turn, isActive, isOnPath } = data;
   const { user, assistant, turnIndex, childIds } = turn;
   const time = assistant?.createdAt ?? user.createdAt;

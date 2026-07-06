@@ -11,7 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useAgent, useAgentContext } from "@copilotkit/react-core/v2";
-import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { chatUiTheme } from "@/lib/weather/skyTheme";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import { parsePreviewDocumentToolOutput } from "@/lib/chat/documentPreview";
 import type { AgentActivityState, AgentToolActivity } from "@/lib/types/chat";
@@ -33,7 +33,7 @@ function getToolDetailLength(tool: AgentToolActivity): number {
 }
 
 function ToolRow({ tool }: { tool: AgentToolActivity }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const running = tool.status === "running";
   const previewPayload =
     tool.toolName === "preview_document" && !running
@@ -137,7 +137,7 @@ export function ChatAgentStatusPanel({
   activity: AgentActivityState;
   className?: string;
 }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const { selectedAgentId } = useChatGraphContext();
   const activeAgentId = selectedAgentId ?? "general";
   const { agent } = useAgent({ agentId: activeAgentId });

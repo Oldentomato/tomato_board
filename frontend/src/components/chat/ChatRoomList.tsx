@@ -3,7 +3,7 @@
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Loader2, MessageSquarePlus, MessagesSquare, PanelRightClose, Trash2 } from "lucide-react";
-import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { chatUiTheme } from "@/lib/weather/skyTheme";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import { cn } from "@/lib/utils/cn";
 
@@ -14,7 +14,7 @@ export function ChatRoomList({
   className?: string;
   onClose?: () => void;
 }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const { rooms, selectedRoomId, selectRoom, createRoom, deleteRoom, isLoading, deletingRoomId } =
     useChatGraphContext();
 

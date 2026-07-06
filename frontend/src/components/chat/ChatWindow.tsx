@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Bot, FileText, MessagesSquare, Send, User } from "lucide-react";
 import { useAgentContext } from "@copilotkit/react-core/v2";
-import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { chatUiTheme } from "@/lib/weather/skyTheme";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import { useDocuments } from "@/hooks/useDocuments";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
@@ -77,7 +77,7 @@ export function ChatWindow({
   onToggleDocuments?: () => void;
   onCloseDocuments?: () => void;
 }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const { activePath, branchContext, sendMessage, selectedRoomId, isSending, streamingNodeId, agents, selectedAgentId, setSelectedAgentId, agentActivity, documentPreviewsByMessageId } =
     useChatGraphContext();
   const [input, setInput] = useState("");

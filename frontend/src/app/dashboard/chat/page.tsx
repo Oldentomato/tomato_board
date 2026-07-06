@@ -7,7 +7,7 @@ import { ChatGraphProvider } from "@/components/chat/ChatGraphContext";
 import { ChatHistoryTree } from "@/components/chat/ChatHistoryTree";
 import { ChatRoomList } from "@/components/chat/ChatRoomList";
 import { ChatWindow } from "@/components/chat/ChatWindow";
-import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { chatUiTheme } from "@/lib/weather/skyTheme";
 import { cn } from "@/lib/utils/cn";
 
 function ChatRoomDrawer({
@@ -17,7 +17,7 @@ function ChatRoomDrawer({
   open: boolean;
   onClose: () => void;
 }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
 
   return (
     <aside
@@ -42,7 +42,7 @@ function ChatRoomDrawer({
 }
 
 export default function ChatPage() {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const [roomsOpen, setRoomsOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
 

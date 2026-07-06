@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertCircle, FileText, Loader2 } from "lucide-react";
-import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
+import { chatUiTheme } from "@/lib/weather/skyTheme";
 import { fetchDocumentBlob, fetchDocumentContent } from "@/lib/api/documents";
 import type { DocumentPreviewPayload } from "@/lib/types/document";
 import { FORMAT_LABELS, formatFileSize } from "@/lib/types/document";
@@ -23,7 +23,7 @@ function parsePreviewPayload(result: string | undefined): DocumentPreviewPayload
 }
 
 export function DocumentPreviewPanel({ payload }: { payload: DocumentPreviewPayload }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -149,7 +149,7 @@ export function DocumentPreviewToolCard({
   status: string;
   result?: string;
 }) {
-  const theme = useSkyTheme();
+  const theme = chatUiTheme;
 
   if (status !== "complete") {
     return (
