@@ -39,23 +39,26 @@ export function WorkspaceIcon({ className }: { className?: string }) {
         strokeWidth="0.7"
         strokeLinecap="round"
       />
-      {/* mail */}
-      <rect x="17" y="8" width="8" height="8" rx="1.8" fill="#fbbf24" fillOpacity="0.88" />
-      <path
-        d="M18.2 11.2 21 13.4 23.8 11.2"
-        stroke="#fff"
-        strokeOpacity="0.9"
-        strokeWidth="0.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <rect x="18.2" y="10.6" width="6.6" height="4.8" rx="0.6" stroke="#fff" strokeOpacity="0.55" strokeWidth="0.55" />
       {/* calendar */}
-      <rect x="7" y="17" width="9" height="7" rx="1.8" fill="#a78bfa" fillOpacity="0.88" />
-      <rect x="7" y="17" width="9" height="2.2" rx="1.8" fill="#fff" fillOpacity="0.28" />
-      <circle cx="9.8" cy="21.2" r="0.75" fill="#fff" fillOpacity="0.75" />
-      <circle cx="12.2" cy="21.2" r="0.75" fill="#fff" fillOpacity="0.75" />
-      <circle cx="14.6" cy="21.2" r="0.75" fill="#fff" fillOpacity="0.45" />
+      <rect x="17" y="8" width="8" height="8" rx="1.8" fill="#a78bfa" fillOpacity="0.88" />
+      <rect x="17" y="8" width="8" height="2.2" rx="1.8" fill="#fff" fillOpacity="0.28" />
+      <circle cx="19.8" cy="12.2" r="0.75" fill="#fff" fillOpacity="0.75" />
+      <circle cx="22.2" cy="12.2" r="0.75" fill="#fff" fillOpacity="0.75" />
+      <circle cx="24.6" cy="12.2" r="0.75" fill="#fff" fillOpacity="0.45" />
+      {/* future slot */}
+      <rect
+        x="7"
+        y="17"
+        width="9"
+        height="7"
+        rx="1.8"
+        fill="#fff"
+        fillOpacity="0.08"
+        stroke="#fff"
+        strokeOpacity="0.2"
+        strokeWidth="0.55"
+        strokeDasharray="1.4 1.2"
+      />
       {/* memo */}
       <rect x="17" y="17" width="8" height="7" rx="1.8" fill="#fde68a" fillOpacity="0.92" />
       <path

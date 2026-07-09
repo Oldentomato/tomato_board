@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import type { Memo } from "@/lib/types/memo";
 import { DEFAULT_MEMO_COLOR, MEMO_COLORS } from "@/lib/types/memo";
@@ -28,23 +28,11 @@ export function MemoModal({
   isSaving,
   isDeleting,
 }: MemoModalProps) {
-  const [mounted, setMounted] = useState(false);
   const [content, setContent] = useState(memo?.content ?? "");
   const [color, setColor] = useState(memo?.color ?? DEFAULT_MEMO_COLOR);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setContent(memo?.content ?? "");
-    setColor(memo?.color ?? DEFAULT_MEMO_COLOR);
-    setError("");
-  }, [isOpen, memo?.id, memo?.content, memo?.color]);
-
-  if (!isOpen || !mounted) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +71,7 @@ export function MemoModal({
               id="memo-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              rows={5}
+              rows={8}
               className={inputClass}
               placeholder="메모를 입력하세요"
               autoFocus

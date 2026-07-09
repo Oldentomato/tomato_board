@@ -19,13 +19,17 @@ import { graphToFlowEdges, graphToFlowNodes, graphTopologyKey } from "@/lib/chat
 import { cn } from "@/lib/utils/cn";
 
 const nodeTypes = { turn: TurnFlowNode } satisfies NodeTypes;
+const EMPTY_PATH_NODE_IDS: string[] = [];
 
 export function ChatHistoryTree({ className }: { className?: string }) {
   const theme = chatUiTheme;
   const { selectedGraph, activeNodeId, branchContext, selectNode } = useChatGraphContext();
   const flowRef = useRef<ReactFlowInstance<Node<TurnFlowNodeData>, Edge> | null>(null);
 
-  const pathNodeIds = branchContext?.pathNodeIds ?? [];
+  const pathNodeIds = useMemo(
+    () => branchContext?.pathNodeIds ?? EMPTY_PATH_NODE_IDS,
+    [branchContext?.pathNodeIds],
+  );
   const pathKey = useMemo(() => pathNodeIds.join("|"), [pathNodeIds]);
   const topologyKey = useMemo(
     () => (selectedGraph ? graphTopologyKey(selectedGraph) : ""),
@@ -44,7 +48,7 @@ export function ChatHistoryTree({ className }: { className?: string }) {
   const nodes = useMemo(() => {
     if (!selectedGraph) return [];
     return graphToFlowNodes(selectedGraph, activeNodeId, pathNodeIds);
-  }, [selectedGraph, activeNodeId, pathKey]);
+  }, [selectedGraph, activeNodeId, pathNodeIds]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

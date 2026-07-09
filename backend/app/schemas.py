@@ -34,28 +34,6 @@ class WeekWeather(BaseModel):
     days: list[DayForecast]
 
 
-class MailMessage(BaseModel):
-    model_config = ConfigDict(populate_by_name=True, ser_json_by_alias=True)
-
-    id: str
-    subject: str
-    from_: str = Field(alias="from")
-    snippet: str
-    date: str
-    isRead: bool
-    webLink: Optional[str] = None
-
-
-class MailSummary(BaseModel):
-    unreadCount: int
-    recent: list[MailMessage]
-
-
-class MailMessagesResponse(BaseModel):
-    messages: list[MailMessage]
-    total: int
-
-
 class CalendarEvent(BaseModel):
     id: str
     title: str
@@ -113,6 +91,24 @@ class MemoPositionInput(BaseModel):
 
 class MemosResponse(BaseModel):
     memos: list[Memo]
+
+
+class Favorite(BaseModel):
+    id: str
+    name: str
+    url: str
+    sortOrder: int
+    createdAt: str
+    updatedAt: str
+
+
+class FavoritesResponse(BaseModel):
+    favorites: list[Favorite]
+
+
+class CreateFavoriteInput(BaseModel):
+    name: str
+    url: str
 
 
 class ChatMessageNode(BaseModel):

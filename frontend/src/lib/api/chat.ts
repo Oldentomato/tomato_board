@@ -121,7 +121,8 @@ export function createChatRoom() {
 export function deleteChatRoom(roomId: string) {
   if (isMockMode()) {
     mockRooms = mockRooms.filter((room) => room.id !== roomId);
-    const { [roomId]: _, ...rest } = mockGraphs;
+    const rest = { ...mockGraphs };
+    delete rest[roomId];
     mockGraphs = rest;
     return Promise.resolve();
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import type { CalendarEvent, CreateEventInput } from "@/lib/types/calendar";
 import { cn } from "@/lib/utils/cn";
@@ -42,7 +42,6 @@ export function EventModal({
   isSaving,
   isDeleting,
 }: EventModalProps) {
-  const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState(event?.title ?? "");
   const [start, setStart] = useState(
     event ? toLocalDatetimeValue(event.start) : initialDate ?? "",
@@ -53,20 +52,7 @@ export function EventModal({
   const [description, setDescription] = useState(event?.description ?? "");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setTitle(event?.title ?? "");
-    setStart(event ? toLocalDatetimeValue(event.start) : initialDate ?? "");
-    setEnd(event ? toLocalDatetimeValue(event.end) : "");
-    setDescription(event?.description ?? "");
-    setError("");
-  }, [isOpen, event?.id, event?.title, event?.start, event?.end, event?.description, initialDate]);
-
-  if (!isOpen || !mounted) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

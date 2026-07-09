@@ -1,6 +1,6 @@
 # Tomato Board
 
-날씨, Gmail, 캘린더를 한 화면에서 확인하는 대시보드 앱입니다.
+날씨, 캘린더를 한 화면에서 확인하는 대시보드 앱입니다.
 
 ## 기술 스택
 
@@ -28,7 +28,7 @@ cd frontend
 npm run local
 ```
 
-- Mock 데이터로 날씨·메일·캘린더 표시
+- Mock 데이터로 날씨·캘린더 표시
 - "Mock 로그인" 버튼으로 즉시 대시보드 진입
 - 캘린더 CRUD는 localStorage에 저장
 
@@ -77,13 +77,6 @@ Google OAuth는 **백엔드에 위임**합니다.
 | GET | `/api/weather/today` | 오늘 날씨 |
 | GET | `/api/weather/week` | 7일 예보 `{ days: [...] }` |
 
-### Mail (Gmail)
-
-| Method | Path | 설명 |
-|--------|------|------|
-| GET | `/api/mail/summary` | `{ unreadCount, recent: MailMessage[] }` |
-| GET | `/api/mail/messages?page&limit` | `{ messages, total }` |
-
 ### Calendar
 
 | Method | Path | 설명 |
@@ -97,7 +90,7 @@ Google OAuth는 **백엔드에 위임**합니다.
 
 1. CORS: `https://board.oldensystem.co.kr` origin + `credentials: true` 허용
 2. OAuth 콜백 후 httpOnly 세션 쿠키 설정 및 `/dashboard` 리다이렉트
-3. Google OAuth scope에 Gmail 읽기 권한 포함
+3. Google OAuth scope에 Calendar 권한 포함
 4. API 응답 필드명이 다르면 타입/mapper 수정
 
 ## 프로젝트 구조

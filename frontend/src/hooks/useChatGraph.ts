@@ -32,6 +32,8 @@ import {
 } from "@/lib/types/chat";
 import type { DocumentPreviewPayload } from "@/lib/types/document";
 
+const ROOMS_QUERY_KEY = ["chat", "rooms"] as const;
+
 function getPathToRoot(graph: ChatGraph, nodeId: string): ChatMessageNode[] {
   const path: ChatMessageNode[] = [];
   let current: ChatMessageNode | undefined = graph.nodes[nodeId];
@@ -64,7 +66,6 @@ function upsertTool(
 
 export function useChatGraph() {
   const queryClient = useQueryClient();
-  const roomsKey = ["chat", "rooms"];
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -87,7 +88,7 @@ export function useChatGraph() {
   }, []);
 
   const roomsQuery = useQuery({
-    queryKey: roomsKey,
+    queryKey: ROOMS_QUERY_KEY,
     queryFn: getChatRooms,
     staleTime: 10 * 1000,
   });
@@ -106,7 +107,7 @@ export function useChatGraph() {
     staleTime: 5 * 1000,
   });
 
-  const rooms = roomsQuery.data?.rooms ?? [];
+  const rooms = useMemo(() => roomsQuery.data?.rooms ?? [], [roomsQuery.data?.rooms]);
   const agents = agentsQuery.data?.agents ?? [];
   const specializedAgents = agents.filter((agentInfo) => agentInfo.id !== "general");
   const selectedGraph = graphQuery.data ?? null;
@@ -124,7 +125,7 @@ export function useChatGraph() {
   }, [selectedGraph, activeNodeId]);
 
   const invalidateChat = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: roomsKey });
+    await queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
     if (selectedRoomId) {
       await queryClient.invalidateQueries({ queryKey: ["chat", "graph", selectedRoomId] });
     }
@@ -145,7 +146,7 @@ export function useChatGraph() {
       setSelectedRoomId(data.room.id);
       setActiveNodeId(data.graph.rootId);
       queryClient.setQueryData(["chat", "graph", data.room.id], data.graph);
-      void queryClient.invalidateQueries({ queryKey: roomsKey });
+      void queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
     },
   });
 
@@ -153,13 +154,13 @@ export function useChatGraph() {
     mutationFn: deleteChatRoom,
     onSuccess: (_, deletedRoomId) => {
       queryClient.removeQueries({ queryKey: ["chat", "graph", deletedRoomId] });
-      queryClient.setQueryData<ChatRoomsResponse>(roomsKey, (old) =>
+      queryClient.setQueryData<ChatRoomsResponse>(ROOMS_QUERY_KEY, (old) =>
         old ? { rooms: old.rooms.filter((room) => room.id !== deletedRoomId) } : old,
       );
 
       if (selectedRoomId === deletedRoomId) {
         const remaining =
-          queryClient.getQueryData<ChatRoomsResponse>(roomsKey)?.rooms ?? [];
+          queryClient.getQueryData<ChatRoomsResponse>(ROOMS_QUERY_KEY)?.rooms ?? [];
         const nextRoomId = remaining[0]?.id ?? null;
         setSelectedRoomId(nextRoomId);
         setActiveNodeId(null);
@@ -491,6 +492,7 @@ export function useChatGraph() {
       isSending,
       ensureRoomContext,
       sendMessageViaStream,
+      sendMessageViaAgUi,
       selectedAgentId,
       queryClient,
     ],

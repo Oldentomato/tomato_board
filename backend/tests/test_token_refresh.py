@@ -18,7 +18,7 @@ def _make_request(session: dict | None = None) -> Request:
     scope = {
         "type": "http",
         "method": "GET",
-        "path": "/api/mail/summary",
+        "path": "/api/calendar/events",
         "headers": [],
         "query_string": b"",
         "client": ("127.0.0.1", 12345),

@@ -11,7 +11,7 @@ from app.neo4j_client import close_neo4j, init_neo4j
 from app.agents.runner import llm_configured
 from app.agents.agui import mount_agui_agents
 from app.middleware import GoogleAuthMiddleware
-from app.routers import auth, calendar, chat, documents, embeddings, mail, memos, weather
+from app.routers import auth, calendar, chat, documents, embeddings, favorites, memos, weather
 from app.services.weather import close_weather_client
 
 settings = get_settings()
@@ -58,9 +58,9 @@ app.add_middleware(
 api = APIRouter(prefix="/api")
 api.include_router(auth.router)
 api.include_router(weather.router)
-api.include_router(mail.router)
 api.include_router(calendar.router)
 api.include_router(memos.router)
+api.include_router(favorites.router)
 api.include_router(documents.router)
 api.include_router(embeddings.router)
 api.include_router(chat.router)

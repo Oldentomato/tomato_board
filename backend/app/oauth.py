@@ -14,7 +14,6 @@ oauth.register(
     client_kwargs={
         "scope": (
             "openid email profile "
-            "https://www.googleapis.com/auth/gmail.readonly "
             "https://www.googleapis.com/auth/calendar"
         ),
     },
@@ -30,6 +29,5 @@ GOOGLE_SCOPES = [
     "openid",
     "email",
     "profile",
-    "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/calendar",
 ]

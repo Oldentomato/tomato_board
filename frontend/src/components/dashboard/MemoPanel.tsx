@@ -78,7 +78,7 @@ function MemoCard({
         transform: `rotate(${rotation}deg)`,
       }}
     >
-      <p className="line-clamp-5 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+      <p className="line-clamp-7 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
         {memo.content}
       </p>
       <time className="mt-2 block text-xs text-slate-600/70">
@@ -430,7 +430,7 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
       </div>
 
       <MemoModal
-        key={editingMemo?.id ?? "new"}
+        key={`${editingMemo?.id ?? "new"}-${isModalOpen ? "open" : "closed"}`}
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);

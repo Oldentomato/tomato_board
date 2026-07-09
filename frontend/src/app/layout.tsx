@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Tomato Board",
-  description: "날씨, Gmail, 캘린더 대시보드",
+  description: "날씨, 캘린더 대시보드",
 };
 
 export default function RootLayout({

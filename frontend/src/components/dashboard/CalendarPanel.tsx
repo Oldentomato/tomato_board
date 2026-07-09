@@ -86,7 +86,7 @@ export function CalendarPanel({ className }: { className?: string }) {
     <>
       <section
         className={cn(
-          "flex flex-col rounded-2xl border px-4 py-3 sm:px-4 lg-tight:py-2",
+          "flex flex-col rounded-2xl border px-4 pt-3 pb-4 sm:px-4 lg-tight:pt-2 lg-tight:pb-3",
           theme.sidebarBorder,
           className,
         )}
@@ -138,7 +138,7 @@ export function CalendarPanel({ className }: { className?: string }) {
           ))}
         </div>
 
-        <div className="grid shrink-0 grid-cols-7">
+        <div className="grid shrink-0 grid-cols-7 gap-y-0.5">
           {calendarDays.map((day) => {
             const dayEvents = eventsForDay(day).sort(
               (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
@@ -153,7 +153,7 @@ export function CalendarPanel({ className }: { className?: string }) {
                 type="button"
                 onClick={() => openCreateModal(day)}
                 className={cn(
-                  "group relative flex h-7 items-center justify-center text-xs transition-opacity hover:opacity-80 lg-tight:h-6",
+                  "group relative flex h-9 items-center justify-center text-xs transition-opacity hover:opacity-80 lg-tight:h-8",
                   !inMonth ? theme.faint : isToday ? "font-bold text-[#E74C3C]" : theme.muted,
                 )}
               >
@@ -235,7 +235,7 @@ export function CalendarPanel({ className }: { className?: string }) {
       </section>
 
       <EventModal
-        key={editingEvent?.id ?? selectedDate?.toISOString() ?? "new"}
+        key={`${editingEvent?.id ?? selectedDate?.toISOString() ?? "new"}-${isModalOpen ? "open" : "closed"}`}
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);

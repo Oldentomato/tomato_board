@@ -1,7 +1,7 @@
 import { WeatherToday } from "@/components/dashboard/WeatherToday";
 import { WeatherWeek } from "@/components/dashboard/WeatherWeek";
-import { MailPanel } from "@/components/dashboard/MailPanel";
 import { CalendarPanel } from "@/components/dashboard/CalendarPanel";
+import { FavoriteLinksPanel } from "@/components/dashboard/FavoriteLinksPanel";
 import { MemoBoard } from "@/components/dashboard/MemoPanel";
 import { EnterAnimation } from "@/components/dashboard/EnterAnimation";
 
@@ -20,10 +20,10 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-col gap-4 lg:col-span-2">
             <EnterAnimation variant="unfold" delay={320}>
-              <MailPanel />
-            </EnterAnimation>
-            <EnterAnimation variant="unfold" delay={440}>
               <CalendarPanel />
+            </EnterAnimation>
+            <EnterAnimation variant="unfold" delay={420}>
+              <FavoriteLinksPanel />
             </EnterAnimation>
           </div>
         </div>

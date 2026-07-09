@@ -6,11 +6,10 @@ import type {
   CreateEventInput,
   UpdateEventInput,
 } from "@/lib/types/calendar";
-import type { MailMessagesResponse, MailSummary } from "@/lib/types/mail";
 import type { CreateMemoInput, Memo, MemoPositionInput, MemosResponse, UpdateMemoInput } from "@/lib/types/memo";
+import type { CreateFavoriteInput, Favorite, FavoritesResponse } from "@/lib/types/favorite";
 import type { TodayWeather, WeekWeather } from "@/lib/types/weather";
 import {
-  MOCK_MAIL_MESSAGES,
   MOCK_TODAY_WEATHER,
   MOCK_USER,
   getMockWeekDays,
@@ -23,6 +22,7 @@ import {
   moveMockMemo,
   updateMockMemo,
 } from "./memoStore";
+import { createMockFavorite, deleteMockFavorite, getMockFavorites } from "./favoriteStore";
 import {
   createMockEvent,
   deleteMockEvent,
@@ -61,26 +61,6 @@ export async function mockGetWeekWeather(): Promise<WeekWeather> {
   await delay();
   requireSession();
   return { days: getMockWeekDays() };
-}
-
-export async function mockGetMailSummary(): Promise<MailSummary> {
-  await delay();
-  requireSession();
-  const unreadCount = MOCK_MAIL_MESSAGES.filter((m) => !m.isRead).length;
-  return { unreadCount, recent: MOCK_MAIL_MESSAGES.slice(0, 5) };
-}
-
-export async function mockGetMailMessages(
-  page = 1,
-  limit = 10,
-): Promise<MailMessagesResponse> {
-  await delay();
-  requireSession();
-  const start = (page - 1) * limit;
-  return {
-    messages: MOCK_MAIL_MESSAGES.slice(start, start + limit),
-    total: MOCK_MAIL_MESSAGES.length,
-  };
 }
 
 export async function mockGetEvents(from: string, to: string): Promise<CalendarEventsResponse> {
@@ -138,4 +118,22 @@ export async function mockMoveMemo(id: string, input: MemoPositionInput): Promis
   await delay(150);
   requireSession();
   return moveMockMemo(id, input);
+}
+
+export async function mockGetFavorites(): Promise<FavoritesResponse> {
+  await delay();
+  requireSession();
+  return { favorites: getMockFavorites() };
+}
+
+export async function mockCreateFavorite(input: CreateFavoriteInput): Promise<Favorite> {
+  await delay();
+  requireSession();
+  return createMockFavorite(input);
+}
+
+export async function mockDeleteFavorite(id: string): Promise<void> {
+  await delay();
+  requireSession();
+  deleteMockFavorite(id);
 }

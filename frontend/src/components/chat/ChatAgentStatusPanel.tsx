@@ -45,16 +45,7 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
     Boolean(previewPayload);
   const isLongContent = getToolDetailLength(tool) > TOOL_DETAIL_COLLAPSE_CHARS;
   const [open, setOpen] = useState(running);
-
-  useEffect(() => {
-    if (running) {
-      setOpen(true);
-      return;
-    }
-    if (isLongContent) {
-      setOpen(false);
-    }
-  }, [running, isLongContent]);
+  const resolvedOpen = running ? true : open;
 
   return (
     <div
@@ -71,7 +62,7 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
           "flex w-full items-center gap-2 px-2.5 py-2 text-left transition",
           hasDetails && "hover:bg-black/[0.03]",
         )}
-        aria-expanded={open}
+        aria-expanded={resolvedOpen}
       >
         {running ? (
           <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-amber-600" />
@@ -88,19 +79,19 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
         >
           {running ? "실행 중" : "완료"}
         </span>
-        {!running && isLongContent && !open && (
+        {!running && isLongContent && !resolvedOpen && (
           <span className={cn("text-[10px]", theme.faint)}>내용 길음</span>
         )}
         {hasDetails && (
           <ChevronDown
             className={cn(
               "ml-auto h-3.5 w-3.5 shrink-0 opacity-50 transition-transform",
-              open && "rotate-180",
+              resolvedOpen && "rotate-180",
             )}
           />
         )}
       </button>
-      {open && hasDetails && (
+      {resolvedOpen && hasDetails && (
         <div className={cn("border-t px-2.5 py-2", running ? "border-amber-200/60" : "border-emerald-200/60")}>
           {tool.input && Object.keys(tool.input).length > 0 && (
             <div>
@@ -184,12 +175,7 @@ export function ChatAgentStatusPanel({
     mergedActivity.tools.length > 0;
 
   const [toolsOpen, setToolsOpen] = useState(true);
-
-  useEffect(() => {
-    if (mergedActivity.tools.some((tool) => tool.status === "running")) {
-      setToolsOpen(true);
-    }
-  }, [mergedActivity.tools]);
+  const resolvedToolsOpen = mergedActivity.tools.some((tool) => tool.status === "running") ? true : toolsOpen;
 
   if (!showPanel) {
     return (
@@ -259,14 +245,14 @@ export function ChatAgentStatusPanel({
               "flex w-full items-center gap-1.5 text-left text-[10px] font-medium uppercase tracking-wide transition hover:opacity-80",
               theme.faint,
             )}
-            aria-expanded={toolsOpen}
+            aria-expanded={resolvedToolsOpen}
           >
             <span>도구 사용 ({mergedActivity.tools.length})</span>
             <ChevronDown
-              className={cn("h-3 w-3 shrink-0 transition-transform", toolsOpen && "rotate-180")}
+              className={cn("h-3 w-3 shrink-0 transition-transform", resolvedToolsOpen && "rotate-180")}
             />
           </button>
-          {toolsOpen &&
+          {resolvedToolsOpen &&
             mergedActivity.tools.map((tool) => (
               <ToolRow key={tool.id} tool={tool} />
             ))}
