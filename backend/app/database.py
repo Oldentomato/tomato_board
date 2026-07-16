@@ -73,7 +73,7 @@ def migrate_memo_columns(db_engine) -> None:
 
 
 def init_db() -> None:
-    from app.models import document, embedding, favorite, memo  # noqa: F401
+    from app.models import document, embedding, event, favorite, memo  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
     migrate_memo_columns(engine)

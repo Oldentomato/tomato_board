@@ -8,6 +8,7 @@
 - TypeScript
 - Tailwind CSS
 - TanStack React Query
+- FullCalendar
 - date-fns
 
 ## 시작하기
@@ -40,7 +41,7 @@ npm run dev
 ```
 
 - API URL은 `https://board.oldensystem.co.kr`로 고정 (`frontend/src/lib/config/api.ts`)
-- Google OAuth 로그인 → 백엔드 API 호출
+- Google OAuth 로그인 → 백엔드 API 호출 (캘린더는 DB에 저장)
 
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다.
 
@@ -51,7 +52,7 @@ npm run dev
 
 ## 인증
 
-Google OAuth는 **백엔드에 위임**합니다.
+Google OAuth는 **로그인 전용**으로 백엔드에 위임합니다. (캘린더 권한 불필요)
 
 1. `/login`에서 "Google로 로그인" 클릭
 2. `{API_URL}/api/auth/google`로 리다이렉트
@@ -79,6 +80,8 @@ Google OAuth는 **백엔드에 위임**합니다.
 
 ### Calendar
 
+자체 DB(`events` 테이블)에 사용자별 일정을 저장합니다. Google Calendar와 무관합니다.
+
 | Method | Path | 설명 |
 |--------|------|------|
 | GET | `/api/calendar/events?from&to` | 일정 목록 |
@@ -90,7 +93,7 @@ Google OAuth는 **백엔드에 위임**합니다.
 
 1. CORS: `https://board.oldensystem.co.kr` origin + `credentials: true` 허용
 2. OAuth 콜백 후 httpOnly 세션 쿠키 설정 및 `/dashboard` 리다이렉트
-3. Google OAuth scope에 Calendar 권한 포함
+3. Google OAuth scope: `openid email profile` (로그인만)
 4. API 응답 필드명이 다르면 타입/mapper 수정
 
 ## 프로젝트 구조

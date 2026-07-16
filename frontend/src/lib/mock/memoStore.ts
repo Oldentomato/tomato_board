@@ -72,11 +72,13 @@ export function createMockMemo(input: CreateMemoInput): Memo {
     content: input.content,
     color: input.color ?? "#FFF9C4",
     side,
-    sortOrder: sideMemos(memos, side).length,
+    sortOrder: 0,
     createdAt: now,
     updatedAt: now,
   };
+  const others = sideMemos(memos, side);
   memos.push(memo);
+  applySideOrder(memos, side, [memo, ...others]);
   saveMemos(memos);
   return memo;
 }

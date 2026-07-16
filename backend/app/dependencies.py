@@ -7,7 +7,6 @@ from fastapi import HTTPException, Request
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.credentials import Credentials
-from googleapiclient.errors import HttpError
 
 from app.config import get_settings
 from app.schemas import User
@@ -39,32 +38,6 @@ def clear_session(request: Request) -> None:
 
 def clear_google_token(request: Request) -> None:
     request.session.pop("token", None)
-
-
-def raise_google_token_error(request: Request) -> None:
-    clear_session(request)
-    raise HTTPException(status_code=401, detail=REAUTH_DETAIL)
-
-
-def google_http_error_to_api(
-    exc: HttpError,
-    *,
-    request: Request,
-    resource: str,
-    not_found_detail: str | None = None,
-) -> HTTPException:
-    status = exc.resp.status if exc.resp else 500
-    if status == 401:
-        clear_session(request)
-        return HTTPException(status_code=401, detail=REAUTH_DETAIL)
-    if status == 404 and not_found_detail:
-        return HTTPException(status_code=404, detail=not_found_detail)
-    if status == 403:
-        return HTTPException(
-            status_code=403,
-            detail=f"{resource} API access denied. Check OAuth scopes.",
-        )
-    return HTTPException(status_code=502, detail=f"Failed to access {resource}.")
 
 
 def get_session_user(request: Request) -> User | None:
@@ -159,13 +132,3 @@ def try_refresh_google_token(request: Request) -> bool:
 
     _persist_refreshed_token(request, token_data, creds)
     return True
-
-
-def get_google_credentials(request: Request) -> Credentials:
-    if not try_refresh_google_token(request):
-        raise_google_token_error(request)
-
-    token_data = request.session.get("token")
-    if not token_data:
-        raise_google_token_error(request)
-    return _build_credentials(token_data)

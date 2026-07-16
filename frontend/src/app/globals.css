@@ -286,3 +286,212 @@ body {
     mask-image: none;
   }
 }
+
+/* FullCalendar — dashboard sidebar (sky theme) */
+.tomato-calendar .fc {
+  --fc-border-color: transparent;
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: transparent;
+  --fc-today-bg-color: transparent;
+  --fc-event-bg-color: #e74c3c;
+  --fc-event-border-color: #e74c3c;
+  --fc-event-text-color: #fff;
+  --fc-more-link-bg-color: transparent;
+  --fc-button-bg-color: transparent;
+  font-size: 0.75rem;
+}
+
+.tomato-calendar--light .fc {
+  --fc-neutral-text-color: rgb(51 65 85);
+  --fc-more-link-text-color: rgb(71 85 105);
+}
+
+.tomato-calendar--dark .fc {
+  --fc-neutral-text-color: rgba(255, 255, 255, 0.9);
+  --fc-more-link-text-color: rgba(255, 255, 255, 0.8);
+}
+
+.tomato-calendar .fc .fc-scrollgrid,
+.tomato-calendar .fc .fc-scrollgrid-section > td,
+.tomato-calendar .fc th,
+.tomato-calendar .fc td {
+  border: none !important;
+}
+
+.tomato-calendar .fc .fc-col-header-cell {
+  padding: 0.125rem 0;
+  font-weight: 500;
+}
+
+.tomato-calendar--light .fc .fc-col-header-cell-cushion {
+  color: rgb(51 65 85);
+}
+
+.tomato-calendar--dark .fc .fc-col-header-cell-cushion {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tomato-calendar .fc .fc-col-header-cell-cushion,
+.tomato-calendar .fc .fc-daygrid-day-number {
+  text-decoration: none;
+  padding: 0.125rem;
+}
+
+.tomato-calendar .fc .fc-daygrid-day-frame {
+  min-height: 2.25rem;
+}
+
+@media (min-width: 1024px) and (max-height: 780px) {
+  .tomato-calendar .fc .fc-daygrid-day-frame {
+    min-height: 2rem;
+  }
+}
+
+.tomato-calendar .fc .fc-daygrid-day-top {
+  flex-direction: row;
+  justify-content: center;
+}
+
+.tomato-calendar .fc .fc-daygrid-day-number {
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.tomato-calendar--light .fc .fc-daygrid-day-number {
+  color: rgb(51 65 85);
+}
+
+.tomato-calendar--dark .fc .fc-daygrid-day-number {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tomato-calendar .fc .fc-day-other .fc-daygrid-day-number {
+  opacity: 0.4;
+}
+
+.tomato-calendar .fc .fc-day-today .fc-daygrid-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.2rem;
+  border-radius: 9999px;
+  background: #2563eb;
+  color: #fff !important;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.tomato-calendar .fc .fc-day-sunday .fc-daygrid-day-number,
+.tomato-calendar .fc .fc-day-holiday .fc-daygrid-day-number {
+  color: #e74c3c !important;
+  font-weight: 600;
+}
+
+.tomato-calendar .fc .fc-day-today.fc-day-sunday .fc-daygrid-day-number,
+.tomato-calendar .fc .fc-day-today.fc-day-holiday .fc-daygrid-day-number {
+  background: #2563eb;
+  color: #fff !important;
+}
+
+.tomato-calendar .fc .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+  color: #e74c3c;
+}
+
+.tomato-calendar .fc .fc-holiday-event {
+  background: transparent !important;
+  border: none !important;
+  margin: 0 1px;
+  padding: 0;
+  cursor: default;
+}
+
+.tomato-calendar .fc .fc-holiday-event .fc-event-main {
+  color: #e74c3c !important;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.15;
+  padding: 0 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tomato-calendar .fc .fc-daygrid-day:hover {
+  cursor: pointer;
+  background-color: rgb(255 255 255 / 0.1);
+}
+
+.tomato-calendar .fc .fc-daygrid-event {
+  margin: 0 1px 1px;
+  border-radius: 3px;
+  font-size: 0.625rem;
+  line-height: 1.1;
+  padding: 0 2px;
+  border: none;
+  cursor: grab;
+}
+
+.tomato-calendar .fc .fc-daygrid-event:active {
+  cursor: grabbing;
+}
+
+.tomato-calendar .fc .fc-event-dragging:not(.fc-event-mirror) {
+  opacity: 0.35 !important;
+}
+
+.tomato-calendar .fc .fc-event-mirror {
+  opacity: 0.45 !important;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.2);
+}
+
+.tomato-event-drag-ghost {
+  position: fixed;
+  z-index: 100000;
+  pointer-events: none;
+  max-width: 10rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.4rem;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  opacity: 0.55;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 0.28);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: translate(14px, -110%);
+}
+
+.tomato-calendar .fc .fc-daygrid-event .fc-event-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tomato-calendar .fc .fc-daygrid-more-link {
+  font-size: 0.625rem;
+  font-weight: 600;
+  margin-top: 0;
+}
+
+.tomato-calendar .fc .fc-popover {
+  border-radius: 0.75rem;
+  border: 1px solid rgb(226 232 240);
+  box-shadow: 0 20px 25px -5px rgb(15 23 42 / 0.12);
+  overflow: hidden;
+}
+
+.tomato-calendar .fc .fc-popover-header {
+  background: rgb(248 250 252);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+}
+
+.tomato-calendar .fc .fc-popover-body {
+  padding: 0.5rem;
+}
+

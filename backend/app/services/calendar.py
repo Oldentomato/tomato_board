@@ -1,105 +1,132 @@
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
+from datetime import datetime, time, timezone
+from uuid import uuid4
+from zoneinfo import ZoneInfo
 
+from fastapi import HTTPException
+from sqlalchemy import and_, select
+from sqlalchemy.orm import Session
+
+from app.models.event import DEFAULT_EVENT_COLOR, EventModel
 from app.schemas import CalendarEvent, CalendarEventsResponse, CreateEventInput, UpdateEventInput
 
-DEFAULT_COLOR = "#E74C3C"
+SEOUL = ZoneInfo("Asia/Seoul")
 
 
-def _build_calendar_service(credentials: Credentials):
-    return build("calendar", "v3", credentials=credentials, cache_discovery=False)
+def _format_iso(dt: datetime) -> str:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _to_calendar_event(item: dict) -> CalendarEvent:
-    color = None
-    if item.get("colorId"):
-        color = DEFAULT_COLOR
+def _parse_iso(value: str) -> datetime:
+    normalized = value.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+    dt = datetime.fromisoformat(normalized)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=SEOUL)
+    return dt.astimezone(timezone.utc)
 
-    extended = item.get("extendedProperties", {}).get("private", {})
-    if extended.get("color"):
-        color = extended["color"]
 
+def _day_bounds(from_date: str, to_date: str) -> tuple[datetime, datetime]:
+    start = datetime.strptime(from_date, "%Y-%m-%d").replace(tzinfo=SEOUL)
+    end_day = datetime.strptime(to_date, "%Y-%m-%d").replace(tzinfo=SEOUL)
+    end = datetime.combine(end_day.date(), time(23, 59, 59, 999999), tzinfo=SEOUL)
+    return start.astimezone(timezone.utc), end.astimezone(timezone.utc)
+
+
+def _to_calendar_event(row: EventModel) -> CalendarEvent:
     return CalendarEvent(
-        id=item["id"],
-        title=item.get("summary", "(제목 없음)"),
-        start=item["start"].get("dateTime") or f"{item['start'].get('date')}T00:00:00+09:00",
-        end=item["end"].get("dateTime") or f"{item['end'].get('date')}T23:59:59+09:00",
-        description=item.get("description"),
-        color=color,
+        id=row.id,
+        title=row.title,
+        start=_format_iso(row.start),
+        end=_format_iso(row.end),
+        description=row.description,
+        color=row.color,
     )
 
 
-def fetch_events(credentials: Credentials, from_date: str, to_date: str) -> CalendarEventsResponse:
-    service = _build_calendar_service(credentials)
-
-    time_min = f"{from_date}T00:00:00+09:00"
-    time_max = f"{to_date}T23:59:59+09:00"
-
-    response = (
-        service.events()
-        .list(
-            calendarId="primary",
-            timeMin=time_min,
-            timeMax=time_max,
-            singleEvents=True,
-            orderBy="startTime",
+def list_events(db: Session, user_id: str, from_date: str, to_date: str) -> CalendarEventsResponse:
+    range_start, range_end = _day_bounds(from_date, to_date)
+    rows = db.scalars(
+        select(EventModel)
+        .where(
+            EventModel.user_id == user_id,
+            and_(EventModel.start <= range_end, EventModel.end >= range_start),
         )
-        .execute()
+        .order_by(EventModel.start.asc())
+    ).all()
+    return CalendarEventsResponse(events=[_to_calendar_event(row) for row in rows])
+
+
+def create_event(db: Session, user_id: str, input_data: CreateEventInput) -> CalendarEvent:
+    title = input_data.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Title is required.")
+
+    start = _parse_iso(input_data.start)
+    end = _parse_iso(input_data.end)
+    if end <= start:
+        raise HTTPException(status_code=400, detail="End must be after start.")
+
+    now = EventModel.utcnow()
+    row = EventModel(
+        id=str(uuid4()),
+        user_id=user_id,
+        title=title,
+        start=start,
+        end=end,
+        description=(input_data.description or "").strip() or None,
+        color=input_data.color or DEFAULT_EVENT_COLOR,
+        created_at=now,
+        updated_at=now,
     )
-
-    events = [_to_calendar_event(item) for item in response.get("items", [])]
-    return CalendarEventsResponse(events=events)
-
-
-def create_event(credentials: Credentials, input_data: CreateEventInput) -> CalendarEvent:
-    service = _build_calendar_service(credentials)
-
-    body: dict = {
-        "summary": input_data.title,
-        "start": {"dateTime": input_data.start, "timeZone": "Asia/Seoul"},
-        "end": {"dateTime": input_data.end, "timeZone": "Asia/Seoul"},
-    }
-
-    if input_data.description:
-        body["description"] = input_data.description
-
-    if input_data.color:
-        body["extendedProperties"] = {"private": {"color": input_data.color}}
-
-    created = service.events().insert(calendarId="primary", body=body).execute()
-    event = _to_calendar_event(created)
-    if input_data.color:
-        event.color = input_data.color
-    return event
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _to_calendar_event(row)
 
 
-def update_event(credentials: Credentials, event_id: str, input_data: UpdateEventInput) -> CalendarEvent:
-    service = _build_calendar_service(credentials)
-
-    existing = service.events().get(calendarId="primary", eventId=event_id).execute()
+def update_event(
+    db: Session,
+    user_id: str,
+    event_id: str,
+    input_data: UpdateEventInput,
+) -> CalendarEvent:
+    row = db.scalar(
+        select(EventModel).where(EventModel.id == event_id, EventModel.user_id == user_id)
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Event not found.")
 
     if input_data.title is not None:
-        existing["summary"] = input_data.title
+        title = input_data.title.strip()
+        if not title:
+            raise HTTPException(status_code=400, detail="Title is required.")
+        row.title = title
     if input_data.start is not None:
-        existing["start"] = {"dateTime": input_data.start, "timeZone": "Asia/Seoul"}
+        row.start = _parse_iso(input_data.start)
     if input_data.end is not None:
-        existing["end"] = {"dateTime": input_data.end, "timeZone": "Asia/Seoul"}
+        row.end = _parse_iso(input_data.end)
     if input_data.description is not None:
-        existing["description"] = input_data.description
+        row.description = input_data.description.strip() or None
     if input_data.color is not None:
-        existing.setdefault("extendedProperties", {}).setdefault("private", {})["color"] = input_data.color
+        row.color = input_data.color
 
-    updated = service.events().update(calendarId="primary", eventId=event_id, body=existing).execute()
-    event = _to_calendar_event(updated)
+    if row.end <= row.start:
+        raise HTTPException(status_code=400, detail="End must be after start.")
 
-    if input_data.color is not None:
-        event.color = input_data.color
-    elif existing.get("extendedProperties", {}).get("private", {}).get("color"):
-        event.color = existing["extendedProperties"]["private"]["color"]
-
-    return event
+    row.updated_at = EventModel.utcnow()
+    db.commit()
+    db.refresh(row)
+    return _to_calendar_event(row)
 
 
-def delete_event(credentials: Credentials, event_id: str) -> None:
-    service = _build_calendar_service(credentials)
-    service.events().delete(calendarId="primary", eventId=event_id).execute()
+def delete_event(db: Session, user_id: str, event_id: str) -> None:
+    row = db.scalar(
+        select(EventModel).where(EventModel.id == event_id, EventModel.user_id == user_id)
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Event not found.")
+    db.delete(row)
+    db.commit()

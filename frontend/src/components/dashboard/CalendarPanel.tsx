@@ -1,23 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isSameDay,
-  isSameMonth,
-  parseISO,
-  startOfMonth,
-  startOfWeek,
-  subMonths,
-} from "date-fns";
+import { useEffect, useMemo, useRef, useState } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import type {
+  DatesSetArg,
+  EventApi,
+  EventClickArg,
+  EventDropArg,
+  EventInput,
+} from "@fullcalendar/core";
+import type { DateClickArg } from "@fullcalendar/interaction";
+import koLocale from "@fullcalendar/core/locales/ko";
+import { endOfMonth, format, parseISO, startOfMonth } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useCalendar } from "@/hooks/useCalendar";
+import {
+  getKoreanHolidayEvents,
+  getKoreanHolidaysInRange,
+  toSeoulDateString,
+} from "@/lib/calendar/koreanHolidays";
 import type { CalendarEvent } from "@/lib/types/calendar";
 import { cn } from "@/lib/utils/cn";
 import { EventModal } from "./EventModal";
@@ -30,15 +35,50 @@ function toDayStartIso(date: Date) {
   return local.toISOString().slice(0, 16);
 }
 
+type DragGhostState = {
+  el: HTMLDivElement;
+  onMove: (event: PointerEvent) => void;
+};
+
+function createDragGhost(title: string, color: string, clientX: number, clientY: number): DragGhostState {
+  const el = document.createElement("div");
+  el.className = "tomato-event-drag-ghost";
+  el.textContent = title;
+  el.style.backgroundColor = color;
+  el.style.left = `${clientX}px`;
+  el.style.top = `${clientY}px`;
+  document.body.appendChild(el);
+
+  const onMove = (event: PointerEvent) => {
+    el.style.left = `${event.clientX}px`;
+    el.style.top = `${event.clientY}px`;
+  };
+  window.addEventListener("pointermove", onMove);
+  return { el, onMove };
+}
+
+function destroyDragGhost(ghost: DragGhostState | null) {
+  if (!ghost) return;
+  window.removeEventListener("pointermove", ghost.onMove);
+  ghost.el.remove();
+}
+
 export function CalendarPanel({ className }: { className?: string }) {
   const theme = useSkyTheme();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const calendarRef = useRef<FullCalendar>(null);
+  const dragGhostRef = useRef<DragGhostState | null>(null);
+  const [monthLabel, setMonthLabel] = useState(() =>
+    format(new Date(), "yyyy.M", { locale: ko }),
+  );
+  const [rangeFrom, setRangeFrom] = useState(() =>
+    format(startOfMonth(new Date()), "yyyy-MM-dd"),
+  );
+  const [rangeTo, setRangeTo] = useState(() =>
+    format(endOfMonth(new Date()), "yyyy-MM-dd"),
+  );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const rangeFrom = format(startOfMonth(currentMonth), "yyyy-MM-dd");
-  const rangeTo = format(endOfMonth(currentMonth), "yyyy-MM-dd");
 
   const {
     events,
@@ -51,16 +91,34 @@ export function CalendarPanel({ className }: { className?: string }) {
     isDeleting,
   } = useCalendar(rangeFrom, rangeTo);
 
-  const calendarDays = useMemo(() => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-    const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start: calStart, end: calEnd });
-  }, [currentMonth]);
+  const fcEvents: EventInput[] = useMemo(() => {
+    const holidayEvents = getKoreanHolidayEvents(rangeFrom, rangeTo);
+    const userEvents = events.map((event) => ({
+      id: event.id,
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      editable: true,
+      startEditable: true,
+      durationEditable: false,
+      backgroundColor: event.color || "#E74C3C",
+      borderColor: event.color || "#E74C3C",
+      extendedProps: { description: event.description, color: event.color },
+    }));
+    return [...holidayEvents, ...userEvents];
+  }, [events, rangeFrom, rangeTo]);
 
-  const eventsForDay = (day: Date) =>
-    events.filter((event) => isSameDay(parseISO(event.start), day));
+  const holidayDates = useMemo(
+    () => new Set(getKoreanHolidaysInRange(rangeFrom, rangeTo).map((h) => h.date)),
+    [rangeFrom, rangeTo],
+  );
+
+  useEffect(() => {
+    return () => {
+      destroyDragGhost(dragGhostRef.current);
+      dragGhostRef.current = null;
+    };
+  }, []);
 
   const openCreateModal = (day: Date) => {
     setSelectedDate(day);
@@ -74,19 +132,103 @@ export function CalendarPanel({ className }: { className?: string }) {
     setIsModalOpen(true);
   };
 
+  const handleDatesSet = (arg: DatesSetArg) => {
+    const endInclusive = new Date(arg.end.getTime() - 1);
+    setRangeFrom(format(arg.start, "yyyy-MM-dd"));
+    setRangeTo(format(endInclusive, "yyyy-MM-dd"));
+    setMonthLabel(format(arg.view.currentStart, "yyyy.M", { locale: ko }));
+  };
+
+  const handleDateClick = (arg: DateClickArg) => {
+    openCreateModal(arg.date);
+  };
+
+  const handleEventClick = (arg: EventClickArg) => {
+    arg.jsEvent.preventDefault();
+    arg.jsEvent.stopPropagation();
+    if (arg.event.extendedProps.isHoliday) return;
+
+    const found = events.find((event) => event.id === arg.event.id);
+    if (found) {
+      openEditModal(found);
+      return;
+    }
+    openEditModal({
+      id: arg.event.id,
+      title: arg.event.title,
+      start: arg.event.start?.toISOString() ?? new Date().toISOString(),
+      end: arg.event.end?.toISOString() ?? arg.event.start?.toISOString() ?? new Date().toISOString(),
+      description: arg.event.extendedProps.description,
+      color: arg.event.extendedProps.color,
+    });
+  };
+
+  const persistEventDates = async (arg: EventDropArg) => {
+    if (arg.event.extendedProps.isHoliday) {
+      arg.revert();
+      return;
+    }
+
+    const start = arg.event.start;
+    if (!start) {
+      arg.revert();
+      return;
+    }
+
+    const end = arg.event.end ?? new Date(start.getTime() + 60 * 60 * 1000);
+
+    try {
+      await updateEvent({
+        id: arg.event.id,
+        input: {
+          start: start.toISOString(),
+          end: end.toISOString(),
+        },
+      });
+    } catch {
+      arg.revert();
+    }
+  };
+
+  const handleEventDrop = (arg: EventDropArg) => {
+    void persistEventDates(arg);
+  };
+
+  const handleEventDragStart = (arg: { event: EventApi; jsEvent: UIEvent }) => {
+    if (arg.event.extendedProps.isHoliday) return;
+    destroyDragGhost(dragGhostRef.current);
+    const jsEvent = arg.jsEvent as MouseEvent;
+    dragGhostRef.current = createDragGhost(
+      arg.event.title,
+      arg.event.backgroundColor || arg.event.extendedProps.color || "#E74C3C",
+      jsEvent.clientX,
+      jsEvent.clientY,
+    );
+  };
+
+  const handleEventDragStop = () => {
+    destroyDragGhost(dragGhostRef.current);
+    dragGhostRef.current = null;
+  };
+
   const upcomingEvents = useMemo(
     () =>
       [...events]
+        .filter((event) => new Date(event.end).getTime() >= Date.now())
         .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
         .slice(0, 2),
     [events],
   );
 
+  const goPrev = () => calendarRef.current?.getApi().prev();
+  const goNext = () => calendarRef.current?.getApi().next();
+
   return (
     <>
       <section
         className={cn(
-          "flex flex-col rounded-2xl border px-4 pt-3 pb-4 sm:px-4 lg-tight:pt-2 lg-tight:pb-3",
+          "tomato-calendar flex flex-col rounded-2xl border px-4 pt-3 pb-4 sm:px-4 lg-tight:pt-2 lg-tight:pb-3",
+          theme.isDark ? "tomato-calendar--dark" : "tomato-calendar--light",
           theme.sidebarBorder,
           className,
         )}
@@ -99,18 +241,18 @@ export function CalendarPanel({ className }: { className?: string }) {
           <div className="flex shrink-0 items-center gap-0.5">
             <button
               type="button"
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              onClick={goPrev}
               className={cn("p-0.5 transition hover:opacity-70", theme.muted)}
               aria-label="이전 달"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <span className={cn("min-w-[5.5rem] text-center text-sm font-medium", theme.text)}>
-              {format(currentMonth, "yyyy.M", { locale: ko })}
+              {monthLabel}
             </span>
             <button
               type="button"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              onClick={goNext}
               className={cn("p-0.5 transition hover:opacity-70", theme.muted)}
               aria-label="다음 달"
             >
@@ -130,72 +272,44 @@ export function CalendarPanel({ className }: { className?: string }) {
           </div>
         </div>
 
-        <div className={cn("grid shrink-0 grid-cols-7 text-center text-xs font-medium", theme.muted)}>
-          {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
-            <div key={d} className="py-0.5">
-              {d}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid shrink-0 grid-cols-7 gap-y-0.5">
-          {calendarDays.map((day) => {
-            const dayEvents = eventsForDay(day).sort(
-              (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
-            );
-            const isToday = isSameDay(day, new Date());
-            const inMonth = isSameMonth(day, currentMonth);
-            const dayOfWeek = day.getDay();
-
-            return (
-              <button
-                key={day.toISOString()}
-                type="button"
-                onClick={() => openCreateModal(day)}
-                className={cn(
-                  "group relative flex h-9 items-center justify-center text-xs transition-opacity hover:opacity-80 lg-tight:h-8",
-                  !inMonth ? theme.faint : isToday ? "font-bold text-[#E74C3C]" : theme.muted,
-                )}
-              >
-                {format(day, "d")}
-                {dayEvents.length > 0 && (
-                  <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-[#E74C3C]" />
-                )}
-                {dayEvents.length > 0 && (
-                  <div
-                    role="tooltip"
-                    className={cn(
-                      "pointer-events-none invisible absolute bottom-full z-20 mb-1.5 w-48 max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-900 opacity-0 shadow-xl transition-opacity duration-150",
-                      "group-hover:visible group-hover:opacity-100",
-                      dayOfWeek === 0 && "left-0 translate-x-0",
-                      dayOfWeek === 6 && "right-0 left-auto translate-x-0",
-                      dayOfWeek !== 0 && dayOfWeek !== 6 && "left-1/2 -translate-x-1/2",
-                    )}
-                  >
-                    <p className="mb-2 text-xs font-bold text-slate-900">
-                      {format(day, "M월 d일 (EEE)", { locale: ko })}
-                    </p>
-                    <ul className="max-h-28 space-y-1.5 overflow-y-auto">
-                      {dayEvents.map((event) => (
-                        <li key={event.id} className="flex items-start gap-2">
-                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#E74C3C]" />
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold text-slate-800">
-                              {event.title}
-                            </p>
-                            <p className="text-xs text-slate-600">
-                              {format(parseISO(event.start), "HH:mm")}
-                              {event.end && ` – ${format(parseISO(event.end), "HH:mm")}`}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </button>
-            );
-          })}
+        <div className="tomato-calendar__body min-h-0 shrink-0">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            locale={koLocale}
+            timeZone="Asia/Seoul"
+            headerToolbar={false}
+            height="auto"
+            contentHeight="auto"
+            fixedWeekCount={false}
+            showNonCurrentDates
+            dayMaxEvents={2}
+            moreLinkClick="popover"
+            dayCellContent={(arg) => ({
+              html: String(arg.date.getDate()),
+            })}
+            dayCellClassNames={(arg) => {
+              const dateKey = toSeoulDateString(arg.date);
+              const classes: string[] = [];
+              if (arg.date.getDay() === 0) classes.push("fc-day-sunday");
+              if (holidayDates.has(dateKey)) classes.push("fc-day-holiday");
+              return classes;
+            }}
+            events={fcEvents}
+            editable
+            eventStartEditable
+            eventDurationEditable={false}
+            dragScroll
+            dateClick={handleDateClick}
+            eventClick={handleEventClick}
+            eventDrop={handleEventDrop}
+            eventDragStart={handleEventDragStart}
+            eventDragStop={handleEventDragStop}
+            datesSet={handleDatesSet}
+            eventDisplay="block"
+            displayEventTime={false}
+          />
         </div>
 
         {isLoading && (
@@ -219,7 +333,10 @@ export function CalendarPanel({ className }: { className?: string }) {
                     onClick={() => openEditModal(event)}
                     className="flex w-full items-center gap-1.5 text-left text-xs transition-opacity hover:opacity-80"
                   >
-                    <span className="h-1 w-1 shrink-0 rounded-full bg-[#E74C3C]" />
+                    <span
+                      className="h-1 w-1 shrink-0 rounded-full"
+                      style={{ backgroundColor: event.color || "#E74C3C" }}
+                    />
                     <span className={cn("min-w-0 truncate font-medium", theme.text)}>
                       {event.title}
                     </span>

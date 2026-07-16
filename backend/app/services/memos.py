@@ -70,10 +70,12 @@ def create_memo(db: Session, user_id: str, input_data: CreateMemoInput) -> Memo:
         content=content,
         color=input_data.color or DEFAULT_MEMO_COLOR,
         side=side,
-        sort_order=len(side_rows),
+        sort_order=0,
         created_at=now,
         updated_at=now,
     )
+    side_rows.insert(0, row)
+    _renumber_side(side_rows)
     db.add(row)
     db.commit()
     db.refresh(row)
