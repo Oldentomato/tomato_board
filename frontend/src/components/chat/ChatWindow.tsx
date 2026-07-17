@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Bot, FileText, MessagesSquare, Send, User } from "lucide-react";
+import { Bot, CircleHelp, FileText, MessagesSquare, Send, User } from "lucide-react";
 import { useAgentContext } from "@copilotkit/react-core/v2";
 import { chatUiTheme } from "@/lib/weather/skyTheme";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import { useDocuments } from "@/hooks/useDocuments";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { ChatAgentStatusPanel } from "@/components/chat/ChatAgentStatusPanel";
+import { ChatGuideModal } from "@/components/chat/ChatGuideModal";
 import { DocumentPreviewPanel } from "@/components/chat/DocumentPreviewPanel";
 import { cn } from "@/lib/utils/cn";
 
@@ -81,6 +82,7 @@ export function ChatWindow({
   const { activePath, branchContext, sendMessage, selectedRoomId, isSending, streamingNodeId, agents, selectedAgentId, setSelectedAgentId, agentActivity, documentPreviewsByMessageId } =
     useChatGraphContext();
   const [input, setInput] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -126,6 +128,11 @@ export function ChatWindow({
       }}
     >
       <BranchContextSync />
+      <ChatGuideModal
+        isOpen={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        selectedAgentId={selectedAgentId}
+      />
 
       <header
         className={cn(
@@ -166,6 +173,21 @@ export function ChatWindow({
                 ))}
               </select>
             )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setGuideOpen(true);
+              }}
+              className={cn(
+                "flex shrink-0 items-center justify-center rounded-xl border bg-white/60 p-2 transition-all duration-200 hover:bg-white/80",
+                theme.sidebarBorder,
+                theme.muted,
+              )}
+              aria-label="AI 채팅 가이드 열기"
+            >
+              <CircleHelp className="h-3.5 w-3.5" />
+            </button>
             {onToggleDocuments && (
               <button
                 type="button"

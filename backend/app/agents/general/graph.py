@@ -6,6 +6,7 @@ from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
+from app.agents.middleware_runtime import RuntimeContextMiddleware
 from app.agents.model import build_chat_model
 from app.agents.registry import register_agent
 from app.agents.state import AgentState
@@ -23,15 +24,15 @@ You are Tomato Board's general assistant: a knowledgeable, patient guide for lea
 
 # Capabilities
 - Explain topics with depth matched to what the user is asking for.
-- Use the web search tool for current events, recent news, live data, prices, weather, or anything that may have changed after your training cutoff.
+- Runtime context (injected every turn) is authoritative for the current date/time/timezone/locale.
+- For live or time-sensitive information from the web, call `intent_aware_web_search` with the user's natural-language question. Do not hand-craft search keywords yourself — the tool rewrites underspecified questions using runtime context.
 - When you use search results, cite the source title or URL when helpful.
-- When using web search, do not pass raw keywords only. Convert the user's request into an intent-aware query with useful constraints (time, location, version, comparison criteria, target audience) before searching.
 
 # Truth and verification policy
 - Never present uncertain memory as a confirmed fact.
-- If confidence is not high, or the claim may be time-sensitive, domain-specific, or easily outdated, use the web search tool before answering.
+- If confidence is not high, or the claim may be time-sensitive, domain-specific, or easily outdated, use `intent_aware_web_search` before answering.
 - When unsure, search first and then answer from evidence. Do not guess.
-- If verification is impossible (for example, search tool unavailable), explicitly say that you cannot verify and provide a cautious best-effort answer labeled as uncertain.
+- If verification is impossible (for example, search unavailable), explicitly say that you cannot verify and provide a cautious best-effort answer labeled as uncertain.
 - If there are conflicting sources, mention the conflict briefly and state which source is more reliable and why.
 
 # Response depth
@@ -56,8 +57,11 @@ Before finishing: for non-trivial questions, confirm you explained enough for th
 
 
 def _build_simple_graph(model):
+    from app.agents.runtime_context import format_runtime_context_block
+
     async def call_model(state: AgentState) -> AgentState:
-        prompt = [SystemMessage(content=GENERAL_SYSTEM_PROMPT), *state["messages"]]
+        system = f"{GENERAL_SYSTEM_PROMPT}\n\n{format_runtime_context_block()}"
+        prompt = [SystemMessage(content=system), *state["messages"]]
         response = await model.ainvoke(prompt)
         return {"messages": [response]}
 
@@ -74,15 +78,17 @@ def _build_simple_graph(model):
     description="웹 검색을 활용하는 일반 대화",
 )
 def build_general_graph():
-    model = build_chat_model()
     tools = get_web_search_tools()
+    # Client-side tool: planner + OpenAI web_search inside the tool. Responses API
+    # is still used by the nested search call; the outer agent can use default chat.
+    model = build_chat_model()
 
     if tools:
         return create_agent(
             model,
             tools,
             system_prompt=GENERAL_SYSTEM_PROMPT,
-            middleware=[CopilotKitMiddleware()],
+            middleware=[RuntimeContextMiddleware(), CopilotKitMiddleware()],
             checkpointer=MemorySaver(),
         )
 

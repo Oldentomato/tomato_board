@@ -12,7 +12,7 @@ def model_supports_reasoning(model: str) -> bool:
     return any(normalized.startswith(prefix) for prefix in _REASONING_MODEL_PREFIXES)
 
 
-def build_chat_model() -> ChatOpenAI:
+def build_chat_model(*, use_responses_api: bool = False) -> ChatOpenAI:
     settings = Settings()
     kwargs: dict = {
         "model": settings.openai_model,
@@ -29,5 +29,8 @@ def build_chat_model() -> ChatOpenAI:
         kwargs["output_version"] = "responses/v1"
     else:
         kwargs["temperature"] = 0.7
+        if use_responses_api:
+            # Required for OpenAI built-in tools such as web_search.
+            kwargs["output_version"] = "responses/v1"
 
     return ChatOpenAI(**kwargs)

@@ -196,10 +196,10 @@ async function mockSendChatMessageStream(
   });
 
   if (/검색|뉴스|날씨|최신|search|news|weather/i.test(trimmed)) {
-    handlers.onToolStart?.({ toolName: "tavily_search", input: { query: trimmed }, runId: "mock-tool-1" });
+    handlers.onToolStart?.({ toolName: "intent_aware_web_search", input: { query: trimmed }, runId: "mock-tool-1" });
     await new Promise((resolve) => setTimeout(resolve, 120));
     handlers.onToolEnd?.({
-      toolName: "tavily_search",
+      toolName: "intent_aware_web_search",
       output: "Mock search results for demonstration.",
       runId: "mock-tool-1",
     });

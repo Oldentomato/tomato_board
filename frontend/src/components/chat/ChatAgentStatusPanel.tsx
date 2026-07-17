@@ -24,14 +24,6 @@ function formatToolName(name: string) {
   return name.replace(/_/g, " ");
 }
 
-const TOOL_DETAIL_COLLAPSE_CHARS = 480;
-
-function getToolDetailLength(tool: AgentToolActivity): number {
-  const inputLen = tool.input ? JSON.stringify(tool.input).length : 0;
-  const outputLen = tool.output?.length ?? 0;
-  return inputLen + outputLen;
-}
-
 function ToolRow({ tool }: { tool: AgentToolActivity }) {
   const theme = chatUiTheme;
   const running = tool.status === "running";
@@ -43,9 +35,8 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
     (tool.input && Object.keys(tool.input).length > 0) ||
     Boolean(tool.output?.trim()) ||
     Boolean(previewPayload);
-  const isLongContent = getToolDetailLength(tool) > TOOL_DETAIL_COLLAPSE_CHARS;
-  const [open, setOpen] = useState(running);
-  const resolvedOpen = running ? true : open;
+  // 상세(입력/결과)는 처음부터 닫힌 상태. 클릭 시에만 펼침.
+  const [open, setOpen] = useState(false);
 
   return (
     <div
@@ -62,7 +53,7 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
           "flex w-full items-center gap-2 px-2.5 py-2 text-left transition",
           hasDetails && "hover:bg-black/[0.03]",
         )}
-        aria-expanded={resolvedOpen}
+        aria-expanded={open}
       >
         {running ? (
           <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-amber-600" />
@@ -79,19 +70,16 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
         >
           {running ? "실행 중" : "완료"}
         </span>
-        {!running && isLongContent && !resolvedOpen && (
-          <span className={cn("text-[10px]", theme.faint)}>내용 길음</span>
-        )}
         {hasDetails && (
           <ChevronDown
             className={cn(
               "ml-auto h-3.5 w-3.5 shrink-0 opacity-50 transition-transform",
-              resolvedOpen && "rotate-180",
+              open && "rotate-180",
             )}
           />
         )}
       </button>
-      {resolvedOpen && hasDetails && (
+      {open && hasDetails && (
         <div className={cn("border-t px-2.5 py-2", running ? "border-amber-200/60" : "border-emerald-200/60")}>
           {tool.input && Object.keys(tool.input).length > 0 && (
             <div>
@@ -175,7 +163,9 @@ export function ChatAgentStatusPanel({
     mergedActivity.tools.length > 0;
 
   const [toolsOpen, setToolsOpen] = useState(true);
-  const resolvedToolsOpen = mergedActivity.tools.some((tool) => tool.status === "running") ? true : toolsOpen;
+  const resolvedToolsOpen = mergedActivity.tools.some((tool) => tool.status === "running")
+    ? true
+    : toolsOpen;
 
   if (!showPanel) {
     return (
