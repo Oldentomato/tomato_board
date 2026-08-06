@@ -20,3 +20,4 @@ python-docx==1.1.2
 hwpkit==1.0.0
 pypdf==5.6.1
 qdrant-client==1.18.0
+tzdata==2026.3

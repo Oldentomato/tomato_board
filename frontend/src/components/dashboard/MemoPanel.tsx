@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { parseUtcIso } from "@/lib/utils/datetime";
 import { Plus, StickyNote } from "lucide-react";
+import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { EnterAnimation } from "@/components/dashboard/EnterAnimation";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useMemos } from "@/hooks/useMemos";
@@ -78,9 +79,9 @@ function MemoCard({
         transform: `rotate(${rotation}deg)`,
       }}
     >
-      <p className="line-clamp-7 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
-        {memo.content}
-      </p>
+      <div className="max-h-[10.5rem] overflow-hidden text-sm leading-relaxed text-slate-800 [&_*]:!mb-1 [&_*]:!mt-0 [&_pre]:overflow-hidden">
+        <ChatMarkdown content={memo.content} className="text-sm" />
+      </div>
       <time className="mt-2 block text-xs text-slate-600/70">
         {format(parseUtcIso(memo.updatedAt), "M/d HH:mm", { locale: ko })}
       </time>
