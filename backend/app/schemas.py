@@ -69,6 +69,7 @@ class Memo(BaseModel):
     color: str
     side: str
     sortOrder: int
+    archived: bool = False
     createdAt: str
     updatedAt: str
 
@@ -82,6 +83,7 @@ class CreateMemoInput(BaseModel):
 class UpdateMemoInput(BaseModel):
     content: Optional[str] = None
     color: Optional[str] = None
+    archived: Optional[bool] = None
 
 
 class MemoPositionInput(BaseModel):

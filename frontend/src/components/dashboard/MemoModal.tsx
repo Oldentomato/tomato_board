@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Pencil, X } from "lucide-react";
+import { Archive, ArchiveRestore, Pencil, X } from "lucide-react";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import type { Memo } from "@/lib/types/memo";
 import { DEFAULT_MEMO_COLOR, MEMO_COLORS } from "@/lib/types/memo";
@@ -16,9 +16,11 @@ type MemoModalProps = {
   onClose: () => void;
   onSave: (input: { content: string; color: string }) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onToggleArchive?: () => Promise<void>;
   memo?: Memo;
   isSaving?: boolean;
   isDeleting?: boolean;
+  isTogglingArchive?: boolean;
 };
 
 const inputClass =
@@ -189,9 +191,11 @@ export function MemoModal({
   onClose,
   onSave,
   onDelete,
+  onToggleArchive,
   memo,
   isSaving,
   isDeleting,
+  isTogglingArchive,
 }: MemoModalProps) {
   const isCreate = !memo;
   const [content, setContent] = useState(memo?.content ?? "");
@@ -240,6 +244,16 @@ export function MemoModal({
     } catch {
       setError("삭제에 실패했습니다.");
       setConfirmDelete(false);
+    }
+  };
+
+  const handleToggleArchive = async () => {
+    if (!onToggleArchive) return;
+    try {
+      await onToggleArchive();
+      onClose();
+    } catch {
+      setError("이동에 실패했습니다.");
     }
   };
 
@@ -307,7 +321,27 @@ export function MemoModal({
                 </time>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-end gap-1">
+              {onToggleArchive && (
+                <button
+                  type="button"
+                  onClick={() => void handleToggleArchive()}
+                  disabled={isTogglingArchive}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/50 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-white/80 disabled:opacity-50"
+                >
+                  {memo.archived ? (
+                    <>
+                      <ArchiveRestore className="h-3.5 w-3.5" />
+                      기본으로 이동
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="h-3.5 w-3.5" />
+                      아카이브로 이동
+                    </>
+                  )}
+                </button>
+              )}
               {!isEditing && (
                 <button
                   type="button"
@@ -334,6 +368,7 @@ export function MemoModal({
               content={previewContent}
               className="text-[0.95rem] leading-relaxed text-slate-800"
             />
+            {error && !isEditing && <p className="mt-3 text-sm text-[#E74C3C]">{error}</p>}
           </div>
         </div>
 

@@ -1,21 +1,387 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { parseUtcIso } from "@/lib/utils/datetime";
-import { Plus, StickyNote } from "lucide-react";
+import { Archive, Plus, Search, StickyNote } from "lucide-react";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { EnterAnimation } from "@/components/dashboard/EnterAnimation";
 import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useMemos } from "@/hooks/useMemos";
 import type { Memo, MemoSide } from "@/lib/types/memo";
-import { DEFAULT_MEMO_COLOR, groupMemosBySide } from "@/lib/types/memo";
+import { DEFAULT_MEMO_COLOR, getArchivedMemos, groupMemosBySide } from "@/lib/types/memo";
 import { cn } from "@/lib/utils/cn";
 import { MemoModal } from "./MemoModal";
 
 const ROTATIONS = [-2.5, 1.8, -1.2, 2.2, -1.8, 1.4];
 const MEMO_DRAG_TYPE = "application/x-tomato-memo-id";
+
+type DragOverTarget = MemoSide | "archive" | "mobile" | null;
+
+function getDraggedMemoId(event: React.DragEvent) {
+  return event.dataTransfer.getData(MEMO_DRAG_TYPE) || event.dataTransfer.getData("text/plain");
+}
+
+function startMemoDrag(event: React.DragEvent, memoId: string) {
+  event.dataTransfer.setData(MEMO_DRAG_TYPE, memoId);
+  event.dataTransfer.setData("text/plain", memoId);
+  event.dataTransfer.effectAllowed = "move";
+}
+
+type ArchiveViewMode = "latest" | "month";
+
+function memoMatchesKeywords(content: string, query: string) {
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const haystack = content.toLowerCase();
+  return tokens.every((token) => haystack.includes(token));
+}
+
+function groupArchivedMemosByMonth(memos: Memo[]) {
+  const groups = new Map<string, { key: string; label: string; memos: Memo[] }>();
+  for (const memo of memos) {
+    const date = parseUtcIso(memo.updatedAt);
+    const key = format(date, "yyyy-MM");
+    const existing = groups.get(key);
+    if (existing) {
+      existing.memos.push(memo);
+      continue;
+    }
+    groups.set(key, {
+      key,
+      label: format(date, "yyyy년 M월", { locale: ko }),
+      memos: [memo],
+    });
+  }
+  return [...groups.values()].sort((a, b) => b.key.localeCompare(a.key));
+}
+
+function MemoHeaderActions({
+  isArchiveView,
+  isDragOver,
+  onToggleArchive,
+  onAdd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  compact,
+}: {
+  isArchiveView: boolean;
+  isDragOver?: boolean;
+  onToggleArchive: () => void;
+  onAdd: () => void;
+  onDragOver?: (event: React.DragEvent) => void;
+  onDragLeave?: (event: React.DragEvent) => void;
+  onDrop?: (event: React.DragEvent) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+      <button
+        type="button"
+        draggable={false}
+        onClick={onToggleArchive}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        aria-pressed={isArchiveView}
+        className={cn(
+          "flex items-center gap-0.5 rounded-md px-1 py-0.5 font-medium transition hover:opacity-70",
+          compact ? "text-[11px]" : "text-xs",
+          isArchiveView ? "text-[#E74C3C]" : "",
+          isDragOver && "bg-[#E74C3C]/15 text-[#E74C3C] ring-2 ring-[#E74C3C]/30",
+        )}
+      >
+        <Archive className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
+        아카이브
+      </button>
+      <button
+        type="button"
+        onClick={onAdd}
+        className={cn(
+          "flex items-center gap-0.5 font-medium transition-opacity hover:opacity-70",
+          compact ? "text-[11px]" : "text-xs",
+        )}
+      >
+        <Plus className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
+        추가
+      </button>
+    </div>
+  );
+}
+
+function ArchiveMemoCard({
+  memo,
+  index,
+  isDragging,
+  onEdit,
+  onDragStartMemo,
+  onDragEndMemo,
+}: {
+  memo: Memo;
+  index: number;
+  isDragging?: boolean;
+  onEdit: (memo: Memo) => void;
+  onDragStartMemo: (memoId: string) => void;
+  onDragEndMemo: () => void;
+}) {
+  const wasDragged = useRef(false);
+
+  return (
+    <div
+      draggable
+      role="button"
+      tabIndex={0}
+      onDragStart={(event) => {
+        wasDragged.current = true;
+        onDragStartMemo(memo.id);
+        startMemoDrag(event, memo.id);
+      }}
+      onDragEnd={() => {
+        onDragEndMemo();
+        window.setTimeout(() => {
+          wasDragged.current = false;
+        }, 0);
+      }}
+      onClick={() => {
+        if (wasDragged.current) return;
+        onEdit(memo);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onEdit(memo);
+        }
+      }}
+      className={cn(
+        "enter-item min-h-[9rem] cursor-grab rounded-xl p-3 text-left shadow-md transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E74C3C]/40 active:cursor-grabbing",
+        isDragging && "opacity-40",
+      )}
+      style={{
+        backgroundColor: memo.color,
+        animationDelay: `${80 + index * 40}ms`,
+      }}
+    >
+      <div className="max-h-[7.5rem] overflow-hidden text-sm leading-relaxed text-slate-800 [&_*]:!mb-1 [&_*]:!mt-0 [&_pre]:overflow-hidden">
+        <ChatMarkdown content={memo.content} className="text-sm" />
+      </div>
+      <time className="mt-2 block text-xs text-slate-600/70">
+        {format(parseUtcIso(memo.updatedAt), "M/d HH:mm", { locale: ko })}
+      </time>
+    </div>
+  );
+}
+
+function MemoArchiveBoard({
+  memos,
+  isLoading,
+  isDragOver,
+  draggingMemoId,
+  onEdit,
+  onDragStartMemo,
+  onDragEndMemo,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+}: {
+  memos: Memo[];
+  isLoading: boolean;
+  isDragOver?: boolean;
+  draggingMemoId?: string | null;
+  onEdit: (memo: Memo) => void;
+  onDragStartMemo: (memoId: string) => void;
+  onDragEndMemo: () => void;
+  onDragOver: (event: React.DragEvent) => void;
+  onDragLeave: (event: React.DragEvent) => void;
+  onDrop: (event: React.DragEvent) => void;
+}) {
+  const theme = useSkyTheme();
+  const [keywordInput, setKeywordInput] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
+  const [viewMode, setViewMode] = useState<ArchiveViewMode>("latest");
+  const isFiltering = appliedQuery.length > 0;
+  const visibleMemos = isFiltering
+    ? memos.filter((memo) => memoMatchesKeywords(memo.content, appliedQuery))
+    : memos;
+  const monthGroups = useMemo(
+    () => (viewMode === "month" ? groupArchivedMemosByMonth(visibleMemos) : []),
+    [viewMode, visibleMemos],
+  );
+
+  const handleSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    setAppliedQuery(keywordInput.trim());
+  };
+
+  const handleReset = () => {
+    setKeywordInput("");
+    setAppliedQuery("");
+  };
+
+  const renderMemoGrid = (items: Memo[], keyPrefix = "") => (
+    <div className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {items.map((memo, index) => (
+        <ArchiveMemoCard
+          key={`${keyPrefix}${memo.id}`}
+          memo={memo}
+          index={index}
+          isDragging={draggingMemoId === memo.id}
+          onEdit={onEdit}
+          onDragStartMemo={onDragStartMemo}
+          onDragEndMemo={onDragEndMemo}
+        />
+      ))}
+    </div>
+  );
+
+  return (
+    <section
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className={cn(
+        "flex min-h-[24rem] flex-1 flex-col rounded-2xl p-1 transition-colors",
+        isDragOver && "bg-white/10 ring-2 ring-[#E74C3C]/25 ring-inset",
+      )}
+    >
+      <div className="mb-3 flex flex-col gap-2 px-1">
+        <div className="flex items-center gap-2">
+          <Archive className={cn("h-4 w-4", theme.text)} />
+          <h2 className={cn("text-sm font-semibold", theme.text)}>아카이브</h2>
+          {!isLoading && (
+            <span className={cn("text-xs", theme.muted)}>
+              {isFiltering ? `${visibleMemos.length}/${memos.length}` : memos.length}
+            </span>
+          )}
+          <div
+            className={cn("ml-auto flex rounded-md border p-0.5", theme.sidebarBorder)}
+            role="group"
+            aria-label="아카이브 보기"
+          >
+            <button
+              type="button"
+              onClick={() => setViewMode("latest")}
+              aria-pressed={viewMode === "latest"}
+              className={cn(
+                "rounded px-2 py-1 text-[11px] font-medium transition",
+                viewMode === "latest"
+                  ? "bg-[#E74C3C] text-white"
+                  : cn("hover:opacity-80", theme.muted),
+              )}
+            >
+              최신순
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("month")}
+              aria-pressed={viewMode === "month"}
+              className={cn(
+                "rounded px-2 py-1 text-[11px] font-medium transition",
+                viewMode === "month"
+                  ? "bg-[#E74C3C] text-white"
+                  : cn("hover:opacity-80", theme.muted),
+              )}
+            >
+              달별
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSearch} className="flex gap-1.5">
+          <label className="sr-only" htmlFor="archive-memo-search">
+            아카이브 검색
+          </label>
+          <input
+            id="archive-memo-search"
+            value={keywordInput}
+            onChange={(event) => setKeywordInput(event.target.value)}
+            placeholder="키워드 검색"
+            className={cn(
+              "min-w-0 flex-1 rounded-md border bg-transparent px-2 py-1.5 text-xs outline-none transition-colors focus:border-[#E74C3C]/60",
+              theme.sidebarBorder,
+              theme.text,
+            )}
+          />
+          <button
+            type="submit"
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-opacity hover:opacity-80",
+              theme.muted,
+            )}
+          >
+            <Search className="h-3 w-3" />
+            검색
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={!isFiltering && keywordInput.length === 0}
+            className={cn(
+              "shrink-0 rounded-md px-2 py-1.5 text-xs font-medium transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40",
+              theme.muted,
+            )}
+          >
+            초기화
+          </button>
+        </form>
+      </div>
+
+      {isLoading && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn("h-32 animate-pulse rounded-xl opacity-20", theme.text, "bg-current")}
+            />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && memos.length === 0 && (
+        <div
+          className={cn(
+            "flex flex-1 items-center justify-center rounded-2xl border border-dashed py-16 text-sm",
+            theme.sidebarBorder,
+            isDragOver ? theme.text : theme.muted,
+          )}
+        >
+          {isDragOver ? "여기에 놓으면 아카이브됩니다." : "아카이브된 메모가 없습니다."}
+        </div>
+      )}
+
+      {!isLoading && memos.length > 0 && visibleMemos.length === 0 && (
+        <div
+          className={cn(
+            "flex flex-1 items-center justify-center rounded-2xl border border-dashed py-16 text-sm",
+            theme.sidebarBorder,
+            theme.muted,
+          )}
+        >
+          검색 결과가 없습니다.
+        </div>
+      )}
+
+      {!isLoading && visibleMemos.length > 0 && viewMode === "latest" && (
+        <div className="flex-1">{renderMemoGrid(visibleMemos)}</div>
+      )}
+
+      {!isLoading && visibleMemos.length > 0 && viewMode === "month" && (
+        <div className="flex flex-1 flex-col gap-5">
+          {monthGroups.map((group) => (
+            <section key={group.key} className="flex flex-col gap-2">
+              <div className="flex items-center gap-1.5 px-1">
+                <h3 className={cn("text-xs font-semibold", theme.text)}>{group.label}</h3>
+                <span className={cn("text-xs font-medium", theme.muted)}>{group.memos.length}</span>
+              </div>
+              {renderMemoGrid(group.memos, `${group.key}-`)}
+            </section>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function getRotation(index: number, side: MemoSide) {
   const base = ROTATIONS[index % ROTATIONS.length];
@@ -48,8 +414,7 @@ function MemoCard({
       onDragStart={(event) => {
         wasDragged.current = true;
         onDragStartMemo(memo.id);
-        event.dataTransfer.setData(MEMO_DRAG_TYPE, memo.id);
-        event.dataTransfer.effectAllowed = "move";
+        startMemoDrag(event, memo.id);
       }}
       onDragEnd={() => {
         onDragEndMemo();
@@ -96,13 +461,19 @@ function MemoRail({
   isDragOver,
   draggingMemoId,
   showHeader,
+  isArchiveView,
+  isArchiveDragOver,
   onAdd,
+  onToggleArchive,
   onEdit,
   onDragStartMemo,
   onDragEndMemo,
   onDragOver,
   onDragLeave,
   onDrop,
+  onArchiveDragOver,
+  onArchiveDragLeave,
+  onArchiveDrop,
 }: {
   side: MemoSide;
   memos: Memo[];
@@ -110,13 +481,19 @@ function MemoRail({
   isDragOver?: boolean;
   draggingMemoId?: string | null;
   showHeader?: boolean;
+  isArchiveView?: boolean;
+  isArchiveDragOver?: boolean;
   onAdd: () => void;
+  onToggleArchive: () => void;
   onEdit: (memo: Memo) => void;
   onDragStartMemo: (memoId: string) => void;
   onDragEndMemo: () => void;
   onDragOver: (event: React.DragEvent) => void;
   onDragLeave: (event: React.DragEvent) => void;
   onDrop: (event: React.DragEvent) => void;
+  onArchiveDragOver: (event: React.DragEvent) => void;
+  onArchiveDragLeave: (event: React.DragEvent) => void;
+  onArchiveDrop: (event: React.DragEvent) => void;
 }) {
   const theme = useSkyTheme();
 
@@ -143,14 +520,16 @@ function MemoRail({
               <StickyNote className={cn("h-4 w-4", theme.text)} />
               <span className={cn("text-xs font-semibold", theme.text)}>메모</span>
             </div>
-            <button
-              type="button"
-              onClick={onAdd}
-              className="flex items-center gap-0.5 text-[11px] font-medium transition-opacity hover:opacity-70"
-            >
-              <Plus className="h-3 w-3" />
-              추가
-            </button>
+            <MemoHeaderActions
+              compact
+              isArchiveView={Boolean(isArchiveView)}
+              isDragOver={isArchiveDragOver}
+              onToggleArchive={onToggleArchive}
+              onAdd={onAdd}
+              onDragOver={onArchiveDragOver}
+              onDragLeave={onArchiveDragLeave}
+              onDrop={onArchiveDrop}
+            />
           </div>
         )}
 
@@ -221,35 +600,70 @@ function MobileMemoStrip({
   memos,
   isLoading,
   isError,
+  isArchiveView,
+  isArchiveDragOver,
+  isDragOver,
+  draggingMemoId,
   onAdd,
+  onToggleArchive,
   onEdit,
+  onDragStartMemo,
+  onDragEndMemo,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onArchiveDragOver,
+  onArchiveDragLeave,
+  onArchiveDrop,
 }: {
   memos: Memo[];
   isLoading: boolean;
   isError: boolean;
+  isArchiveView: boolean;
+  isArchiveDragOver?: boolean;
+  isDragOver?: boolean;
+  draggingMemoId?: string | null;
   onAdd: () => void;
+  onToggleArchive: () => void;
   onEdit: (memo: Memo) => void;
+  onDragStartMemo: (memoId: string) => void;
+  onDragEndMemo: () => void;
+  onDragOver: (event: React.DragEvent) => void;
+  onDragLeave: (event: React.DragEvent) => void;
+  onDrop: (event: React.DragEvent) => void;
+  onArchiveDragOver: (event: React.DragEvent) => void;
+  onArchiveDragLeave: (event: React.DragEvent) => void;
+  onArchiveDrop: (event: React.DragEvent) => void;
 }) {
   const theme = useSkyTheme();
 
   return (
-    <section className={cn("rounded-2xl border px-4 py-4 lg:hidden", theme.sidebarBorder)}>
+    <section
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className={cn(
+        "rounded-2xl border px-4 py-4 lg:hidden",
+        theme.sidebarBorder,
+        isDragOver && "bg-white/10 ring-2 ring-[#E74C3C]/25 ring-inset",
+      )}
+    >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <StickyNote className={cn("h-4 w-4", theme.text)} />
           <h2 className={cn("text-sm font-semibold", theme.text)}>메모</h2>
         </div>
-        <button
-          type="button"
-          onClick={onAdd}
-          className={cn(
-            "flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-70",
-            theme.muted,
-          )}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          추가
-        </button>
+        <div className={theme.muted}>
+          <MemoHeaderActions
+            isArchiveView={isArchiveView}
+            isDragOver={isArchiveDragOver}
+            onToggleArchive={onToggleArchive}
+            onAdd={onAdd}
+            onDragOver={onArchiveDragOver}
+            onDragLeave={onArchiveDragLeave}
+            onDrop={onArchiveDrop}
+          />
+        </div>
       </div>
 
       {isLoading && (
@@ -273,9 +687,10 @@ function MobileMemoStrip({
                 memo={memo}
                 index={index}
                 side={memo.side}
+                isDragging={draggingMemoId === memo.id}
                 onEdit={onEdit}
-                onDragStartMemo={() => {}}
-                onDragEndMemo={() => {}}
+                onDragStartMemo={onDragStartMemo}
+                onDragEndMemo={onDragEndMemo}
               />
             </div>
           ))}
@@ -312,10 +727,14 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
 
   const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isArchiveView, setIsArchiveView] = useState(false);
   const [draggingMemoId, setDraggingMemoId] = useState<string | null>(null);
-  const [dragOverSide, setDragOverSide] = useState<MemoSide | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<DragOverTarget>(null);
+  const draggingMemoRef = useRef<Memo | null>(null);
 
   const { left, right } = groupMemosBySide(memos);
+  const archivedMemos = getArchivedMemos(memos);
+  const toggleArchiveView = () => setIsArchiveView((current) => !current);
 
   const openCreateModal = () => {
     setEditingMemo(null);
@@ -327,9 +746,15 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
     setIsModalOpen(true);
   };
 
+  const beginDrag = (memoId: string) => {
+    draggingMemoRef.current = memos.find((item) => item.id === memoId) ?? null;
+    setDraggingMemoId(memoId);
+  };
+
   const endDrag = () => {
+    draggingMemoRef.current = null;
     setDraggingMemoId(null);
-    setDragOverSide(null);
+    setDragOverTarget(null);
   };
 
   const resolveDropIndex = (event: React.DragEvent, sideMemos: Memo[]) => {
@@ -351,15 +776,19 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
 
   const handleDrop = async (event: React.DragEvent, side: MemoSide, sideMemos: Memo[]) => {
     event.preventDefault();
-    setDragOverSide(null);
     endDrag();
 
-    const memoId = event.dataTransfer.getData(MEMO_DRAG_TYPE);
+    const memoId = getDraggedMemoId(event);
     if (!memoId) return;
 
     const dropIndex = resolveDropIndex(event, sideMemos);
     const memo = memos.find((item) => item.id === memoId);
     if (!memo) return;
+
+    if (memo.archived) {
+      await moveMemo({ id: memoId, input: { side, index: dropIndex } });
+      return;
+    }
 
     let index = dropIndex;
     if (memo.side === side && memo.sortOrder < dropIndex) {
@@ -370,29 +799,91 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
     await moveMemo({ id: memoId, input: { side, index } });
   };
 
+  const handleArchiveDrop = async (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    endDrag();
+
+    const memoId = getDraggedMemoId(event);
+    if (!memoId) return;
+
+    const memo = memos.find((item) => item.id === memoId);
+    if (!memo || memo.archived) return;
+
+    await updateMemo({ id: memoId, input: { archived: true } });
+  };
+
+  const handleMobileDrop = async (event: React.DragEvent) => {
+    event.preventDefault();
+    endDrag();
+
+    const memoId = getDraggedMemoId(event);
+    if (!memoId) return;
+
+    const memo = memos.find((item) => item.id === memoId);
+    if (!memo?.archived) return;
+
+    await moveMemo({ id: memoId, input: { side: memo.side, index: 0 } });
+  };
+
+  const leaveTarget = (target: DragOverTarget, event: React.DragEvent) => {
+    const related = event.relatedTarget as Node | null;
+    if (related && event.currentTarget.contains(related)) return;
+    setDragOverTarget((current) => (current === target ? null : current));
+  };
+
+  const archiveDragHandlers = {
+    onArchiveDragOver: (event: React.DragEvent) => {
+      event.stopPropagation();
+      if (draggingMemoRef.current?.archived) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setDragOverTarget("archive");
+    },
+    onArchiveDragLeave: (event: React.DragEvent) => {
+      event.stopPropagation();
+      leaveTarget("archive", event);
+    },
+    onArchiveDrop: (event: React.DragEvent) => {
+      void handleArchiveDrop(event);
+    },
+  };
+
   const railHandlers = (side: MemoSide, sideMemos: Memo[]) => ({
     onDragOver: (event: React.DragEvent) => {
       event.preventDefault();
       event.stopPropagation();
       event.dataTransfer.dropEffect = "move";
-      setDragOverSide(side);
+      setDragOverTarget(side);
     },
-    onDragLeave: (event: React.DragEvent) => {
-      const related = event.relatedTarget as Node | null;
-      if (related && event.currentTarget.contains(related)) return;
-      setDragOverSide((current) => (current === side ? null : current));
-    },
+    onDragLeave: (event: React.DragEvent) => leaveTarget(side, event),
     onDrop: (event: React.DragEvent) => handleDrop(event, side, sideMemos),
   });
 
   return (
     <div className="flex flex-1 flex-col gap-4">
       <MobileMemoStrip
-        memos={memos}
+        memos={left.concat(right)}
         isLoading={isLoading}
         isError={isError}
+        isArchiveView={isArchiveView}
+        isArchiveDragOver={dragOverTarget === "archive"}
+        isDragOver={dragOverTarget === "mobile"}
+        draggingMemoId={draggingMemoId}
         onAdd={openCreateModal}
+        onToggleArchive={toggleArchiveView}
         onEdit={openEditModal}
+        onDragStartMemo={beginDrag}
+        onDragEndMemo={endDrag}
+        onDragOver={(event) => {
+          if (!draggingMemoRef.current?.archived) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+          setDragOverTarget("mobile");
+        }}
+        onDragLeave={(event) => leaveTarget("mobile", event)}
+        onDrop={(event) => void handleMobileDrop(event)}
+        {...archiveDragHandlers}
       />
 
       <div className="grid gap-5 lg:grid-cols-[12rem_1fr_12rem] lg:items-stretch lg:gap-5 xl:grid-cols-[14rem_1fr_14rem]">
@@ -401,31 +892,55 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
             side="left"
             memos={left}
             isLoading={isLoading}
-            isDragOver={dragOverSide === "left"}
+            isDragOver={dragOverTarget === "left"}
             draggingMemoId={draggingMemoId}
             showHeader
+            isArchiveView={isArchiveView}
+            isArchiveDragOver={dragOverTarget === "archive"}
             onAdd={openCreateModal}
+            onToggleArchive={toggleArchiveView}
             onEdit={openEditModal}
-            onDragStartMemo={setDraggingMemoId}
+            onDragStartMemo={beginDrag}
             onDragEndMemo={endDrag}
             {...railHandlers("left", left)}
+            {...archiveDragHandlers}
           />
         </EnterAnimation>
 
-        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          {isArchiveView ? (
+            <MemoArchiveBoard
+              memos={archivedMemos}
+              isLoading={isLoading}
+              isDragOver={dragOverTarget === "archive"}
+              draggingMemoId={draggingMemoId}
+              onEdit={openEditModal}
+              onDragStartMemo={beginDrag}
+              onDragEndMemo={endDrag}
+              onDragOver={archiveDragHandlers.onArchiveDragOver}
+              onDragLeave={archiveDragHandlers.onArchiveDragLeave}
+              onDrop={archiveDragHandlers.onArchiveDrop}
+            />
+          ) : (
+            children
+          )}
+        </div>
 
         <EnterAnimation variant="unfold" delay={180} className="h-full">
           <MemoRail
             side="right"
             memos={right}
             isLoading={isLoading}
-            isDragOver={dragOverSide === "right"}
+            isDragOver={dragOverTarget === "right"}
             draggingMemoId={draggingMemoId}
+            isArchiveDragOver={dragOverTarget === "archive"}
             onAdd={openCreateModal}
+            onToggleArchive={toggleArchiveView}
             onEdit={openEditModal}
-            onDragStartMemo={setDraggingMemoId}
+            onDragStartMemo={beginDrag}
             onDragEndMemo={endDrag}
             {...railHandlers("right", right)}
+            {...archiveDragHandlers}
           />
         </EnterAnimation>
       </div>
@@ -440,6 +955,7 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
         memo={editingMemo ?? undefined}
         isSaving={isCreating || isUpdating}
         isDeleting={isDeleting}
+        isTogglingArchive={isUpdating}
         onSave={async (input) => {
           if (editingMemo) {
             await updateMemo({ id: editingMemo.id, input });
@@ -455,6 +971,16 @@ export function MemoBoard({ children }: { children: React.ReactNode }) {
           editingMemo
             ? async () => {
                 await deleteMemo(editingMemo.id);
+              }
+            : undefined
+        }
+        onToggleArchive={
+          editingMemo
+            ? async () => {
+                await updateMemo({
+                  id: editingMemo.id,
+                  input: { archived: !editingMemo.archived },
+                });
               }
             : undefined
         }

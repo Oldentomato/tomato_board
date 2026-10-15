@@ -26,6 +26,7 @@ def _to_memo(row: MemoModel) -> Memo:
         color=row.color,
         side=row.side,
         sortOrder=row.sort_order,
+        archived=bool(row.archived),
         createdAt=_format_utc(row.created_at),
         updatedAt=_format_utc(row.updated_at),
     )
@@ -35,7 +36,11 @@ def _side_rows(db: Session, user_id: str, side: str) -> list[MemoModel]:
     return list(
         db.scalars(
             select(MemoModel)
-            .where(MemoModel.user_id == user_id, MemoModel.side == side)
+            .where(
+                MemoModel.user_id == user_id,
+                MemoModel.side == side,
+                MemoModel.archived.is_(False),
+            )
             .order_by(MemoModel.sort_order.asc(), MemoModel.created_at.asc())
         ).all()
     )
@@ -44,6 +49,22 @@ def _side_rows(db: Session, user_id: str, side: str) -> list[MemoModel]:
 def _renumber_side(rows: list[MemoModel]) -> None:
     for index, row in enumerate(rows):
         row.sort_order = index
+
+
+def _set_archived(db: Session, user_id: str, row: MemoModel, archived: bool) -> None:
+    if archived:
+        side = row.side
+        row.archived = True
+        db.flush()
+        remaining = _side_rows(db, user_id, side)
+        _renumber_side(remaining)
+        return
+
+    row.archived = False
+    db.flush()
+    others = [item for item in _side_rows(db, user_id, row.side) if item.id != row.id]
+    others.insert(0, row)
+    _renumber_side(others)
 
 
 def list_memos(db: Session, user_id: str) -> MemosResponse:
@@ -71,6 +92,7 @@ def create_memo(db: Session, user_id: str, input_data: CreateMemoInput) -> Memo:
         color=input_data.color or DEFAULT_MEMO_COLOR,
         side=side,
         sort_order=0,
+        archived=False,
         created_at=now,
         updated_at=now,
     )
@@ -96,6 +118,8 @@ def update_memo(db: Session, user_id: str, memo_id: str, input_data: UpdateMemoI
         row.content = content
     if input_data.color is not None:
         row.color = input_data.color
+    if input_data.archived is not None and bool(input_data.archived) != bool(row.archived):
+        _set_archived(db, user_id, row, input_data.archived)
     row.updated_at = MemoModel.utcnow()
 
     db.commit()
@@ -114,6 +138,7 @@ def move_memo(db: Session, user_id: str, memo_id: str, side: str, index: int) ->
         raise HTTPException(status_code=404, detail="Memo not found.")
 
     old_side = row.side
+    row.archived = False
     left_rows = _side_rows(db, user_id, "left")
     right_rows = _side_rows(db, user_id, "right")
 

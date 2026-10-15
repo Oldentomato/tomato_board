@@ -44,6 +44,8 @@ def migrate_memo_columns(db_engine) -> None:
         if "sort_order" not in columns:
             conn.execute(text("ALTER TABLE memos ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"))
             added_columns = True
+        if "archived" not in columns:
+            conn.execute(text("ALTER TABLE memos ADD COLUMN archived BOOLEAN NOT NULL DEFAULT 0"))
 
     if not added_columns:
         return

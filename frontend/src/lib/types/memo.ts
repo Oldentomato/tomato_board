@@ -6,6 +6,7 @@ export type Memo = {
   color: string;
   side: MemoSide;
   sortOrder: number;
+  archived: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -23,6 +24,7 @@ export type CreateMemoInput = {
 export type UpdateMemoInput = {
   content?: string;
   color?: string;
+  archived?: boolean;
 };
 
 export type MemoPositionInput = {
@@ -40,12 +42,27 @@ export const MEMO_COLORS = [
 
 export const DEFAULT_MEMO_COLOR = MEMO_COLORS[0].value;
 
+export function isArchivedMemo(memo: Memo) {
+  return Boolean(memo.archived);
+}
+
 export function groupMemosBySide(memos: Memo[]) {
-  const left = memos
+  const active = memos.filter((memo) => !isArchivedMemo(memo));
+  const left = active
     .filter((memo) => memo.side === "left")
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  const right = memos
+  const right = active
     .filter((memo) => memo.side === "right")
     .sort((a, b) => a.sortOrder - b.sortOrder);
   return { left, right };
+}
+
+export function getArchivedMemos(memos: Memo[]) {
+  return memos
+    .filter(isArchivedMemo)
+    .sort((a, b) => {
+      const byUpdated = b.updatedAt.localeCompare(a.updatedAt);
+      if (byUpdated !== 0) return byUpdated;
+      return a.id.localeCompare(b.id);
+    });
 }

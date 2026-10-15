@@ -14,6 +14,7 @@ function normalizeMemo(memo: Memo, index: number): Memo {
     ...memo,
     side: memo.side ?? (index % 2 === 0 ? "left" : "right"),
     sortOrder: memo.sortOrder ?? index,
+    archived: Boolean(memo.archived),
   };
 }
 
@@ -43,7 +44,7 @@ function saveMemos(memos: Memo[]) {
 
 function sideMemos(memos: Memo[], side: MemoSide) {
   return memos
-    .filter((memo) => memo.side === side)
+    .filter((memo) => memo.side === side && !memo.archived)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
@@ -73,6 +74,7 @@ export function createMockMemo(input: CreateMemoInput): Memo {
     color: input.color ?? "#FFF9C4",
     side,
     sortOrder: 0,
+    archived: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -87,11 +89,22 @@ export function updateMockMemo(id: string, input: UpdateMemoInput): Memo {
   const memos = loadMemos();
   const index = memos.findIndex((memo) => memo.id === id);
   if (index === -1) throw new Error("Memo not found");
+  const previous = memos[index];
+  const nextArchived = input.archived ?? previous.archived;
   memos[index] = {
-    ...memos[index],
+    ...previous,
     ...input,
+    archived: nextArchived,
     updatedAt: new Date().toISOString(),
   };
+
+  if (!previous.archived && nextArchived) {
+    renumberSide(memos, previous.side);
+  } else if (previous.archived && !nextArchived) {
+    const others = sideMemos(memos, previous.side).filter((memo) => memo.id !== id);
+    applySideOrder(memos, previous.side, [memos[index], ...others]);
+  }
+
   saveMemos(memos);
   return memos[index];
 }
@@ -110,6 +123,7 @@ export function moveMockMemo(id: string, input: MemoPositionInput): Memo {
   const memos = loadMemos();
   const row = memos.find((memo) => memo.id === id);
   if (!row) throw new Error("Memo not found");
+  row.archived = false;
 
   let left = sideMemos(memos, "left").filter((memo) => memo.id !== id);
   let right = sideMemos(memos, "right").filter((memo) => memo.id !== id);
