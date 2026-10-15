@@ -91,11 +91,13 @@ export function updateMockMemo(id: string, input: UpdateMemoInput): Memo {
   if (index === -1) throw new Error("Memo not found");
   const previous = memos[index];
   const nextArchived = input.archived ?? previous.archived;
+  const nextContent = input.content ?? previous.content;
   memos[index] = {
     ...previous,
     ...input,
     archived: nextArchived,
-    updatedAt: new Date().toISOString(),
+    updatedAt:
+      nextContent !== previous.content ? new Date().toISOString() : previous.updatedAt,
   };
 
   if (!previous.archived && nextArchived) {
@@ -138,7 +140,6 @@ export function moveMockMemo(id: string, input: MemoPositionInput): Memo {
 
   applySideOrder(memos, "left", left);
   applySideOrder(memos, "right", right);
-  row.updatedAt = new Date().toISOString();
   saveMemos(memos);
   return row;
 }

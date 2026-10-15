@@ -115,12 +115,13 @@ def update_memo(db: Session, user_id: str, memo_id: str, input_data: UpdateMemoI
         content = input_data.content.strip()
         if not content:
             raise HTTPException(status_code=400, detail="Content is required.")
-        row.content = content
+        if content != row.content:
+            row.content = content
+            row.updated_at = MemoModel.utcnow()
     if input_data.color is not None:
         row.color = input_data.color
     if input_data.archived is not None and bool(input_data.archived) != bool(row.archived):
         _set_archived(db, user_id, row, input_data.archived)
-    row.updated_at = MemoModel.utcnow()
 
     db.commit()
     db.refresh(row)
@@ -154,7 +155,6 @@ def move_memo(db: Session, user_id: str, memo_id: str, side: str, index: int) ->
 
     _renumber_side(left_rows)
     _renumber_side(right_rows)
-    row.updated_at = MemoModel.utcnow()
 
     db.commit()
     db.refresh(row)
