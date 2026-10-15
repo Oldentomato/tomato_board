@@ -13,7 +13,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { GitBranch, Move } from "lucide-react";
 import { TurnFlowNode, type TurnFlowNodeData } from "@/components/chat/TurnFlowNode";
-import { chatUiTheme } from "@/lib/weather/skyTheme";
+import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import { graphToFlowEdges, graphToFlowNodes, graphTopologyKey } from "@/lib/chat/graphToFlow";
 import { cn } from "@/lib/utils/cn";
@@ -22,7 +22,7 @@ const nodeTypes = { turn: TurnFlowNode } satisfies NodeTypes;
 const EMPTY_PATH_NODE_IDS: string[] = [];
 
 export function ChatHistoryTree({ className }: { className?: string }) {
-  const theme = chatUiTheme;
+  const theme = useSkyTheme();
   const { selectedGraph, activeNodeId, branchContext, selectNode } = useChatGraphContext();
   const flowRef = useRef<ReactFlowInstance<Node<TurnFlowNodeData>, Edge> | null>(null);
 
@@ -70,38 +70,26 @@ export function ChatHistoryTree({ className }: { className?: string }) {
   }, []);
 
   return (
-    <section
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border shadow-sm",
-        theme.sidebarBorder,
-        "bg-white/40 backdrop-blur-sm",
-        className,
-      )}
-    >
-      <div
-        className={cn(
-          "sticky top-0 z-10 shrink-0 border-b px-4 py-3",
-          theme.sidebarBorder,
-          "bg-white/80 backdrop-blur-md",
-        )}
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/5">
-            <GitBranch className={cn("h-4 w-4", theme.text)} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className={cn("text-sm font-semibold tracking-tight", theme.text)}>대화 트리</h2>
-            <p className={cn("flex items-center gap-1 text-[10px] leading-relaxed", theme.faint)}>
-              <Move className="h-3 w-3 shrink-0 opacity-70" />
-              Turn 클릭으로 분기 · 드래그/스크롤로 탐색
-            </p>
-          </div>
+    <section className={cn("flex h-full min-h-0 flex-col overflow-hidden", className)}>
+      <div className="flex shrink-0 items-center gap-2 px-1 pb-3">
+        <GitBranch className={cn("h-4 w-4", theme.text)} />
+        <div className="min-w-0 flex-1">
+          <h2 className={cn("text-sm font-semibold tracking-tight", theme.text)}>대화 트리</h2>
+          <p className={cn("flex items-center gap-1 text-[10px] leading-relaxed", theme.faint)}>
+            <Move className="h-3 w-3 shrink-0 opacity-70" />
+            Turn 클릭으로 분기 · 드래그/스크롤로 탐색
+          </p>
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div
+        className={cn(
+          "relative min-h-0 flex-1 overflow-hidden rounded-2xl border bg-white/65 backdrop-blur-md",
+          theme.sidebarBorder,
+        )}
+      >
         {!selectedGraph || nodes.length === 0 ? (
-          <p className={cn("p-4 text-sm", theme.muted)}>채팅방을 선택하세요.</p>
+          <p className={cn("px-4 py-6 text-sm", theme.muted)}>채팅방을 선택하세요.</p>
         ) : (
           <ReactFlow
             nodes={nodes}
@@ -117,10 +105,17 @@ export function ChatHistoryTree({ className }: { className?: string }) {
             minZoom={0.35}
             maxZoom={1.5}
             proOptions={{ hideAttribution: true }}
-            className="h-full w-full bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.04)_1px,transparent_0)] [background-size:18px_18px]"
+            className="h-full w-full bg-transparent"
           >
-            <Background gap={18} size={1} color="rgba(0,0,0,0.05)" />
-            <Controls showInteractive={false} className="!border-black/10 !bg-white/90 !shadow-sm" />
+            <Background gap={28} size={1} color="rgba(15,23,42,0.08)" />
+            <Controls
+              showInteractive={false}
+              className={cn(
+                "!border !bg-white/80 !shadow-none",
+                theme.sidebarBorder,
+                "[&_button]:!border-slate-900/12 [&_button]:!bg-white/80",
+              )}
+            />
           </ReactFlow>
         )}
       </div>

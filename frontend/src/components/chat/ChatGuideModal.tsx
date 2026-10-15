@@ -37,7 +37,7 @@ export function ChatGuideModal({ isOpen, onClose, selectedAgentId }: ChatGuideMo
         role="dialog"
         aria-modal="true"
         aria-labelledby="chat-guide-title"
-        className="relative flex max-h-[min(90vh,640px)] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white/80 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl"
+        className="relative flex max-h-[min(90vh,640px)] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-slate-900/15 bg-transparent"
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-black/5 px-6 py-5">
           <div className="min-w-0">
@@ -57,7 +57,7 @@ export function ChatGuideModal({ isOpen, onClose, selectedAgentId }: ChatGuideMo
         </div>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 scrollbar-subtle">
-          <div className="flex gap-2.5 rounded-2xl bg-amber-50/80 px-3.5 py-3 ring-1 ring-amber-200/60">
+          <div className="flex gap-2.5 rounded-2xl border border-amber-400/50 bg-transparent px-3.5 py-3">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <p className="text-sm leading-relaxed text-amber-900/90">{tip}</p>
           </div>
@@ -110,10 +110,8 @@ function AgentGuideSection({
             <div
               key={agent.id}
               className={cn(
-                "rounded-2xl px-3.5 py-3 ring-1",
-                isActive
-                  ? "bg-violet-50/70 ring-violet-200/70"
-                  : "bg-white/50 ring-black/5",
+                "rounded-2xl border bg-transparent px-3.5 py-3",
+                isActive ? "border-violet-400/60" : "border-slate-900/12",
               )}
             >
               <div className="flex items-center gap-2">
@@ -149,7 +147,7 @@ function DocumentGuideSection() {
         <FileText className="h-4 w-4 text-[#E74C3C]" />
         <h4 className="text-sm font-semibold text-slate-800">{documents.title}</h4>
       </div>
-      <div className="rounded-2xl bg-white/50 px-3.5 py-3 ring-1 ring-black/5">
+      <div className="rounded-2xl border border-slate-900/12 bg-transparent px-3.5 py-3">
         <p className="text-xs leading-relaxed text-slate-600">{documents.body}</p>
         <ul className="mt-2 space-y-1">
           {documents.bullets.map((bullet) => (

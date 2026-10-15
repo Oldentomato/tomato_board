@@ -41,8 +41,8 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg border text-xs",
-        running ? "border-amber-200/80 bg-amber-50/70" : "border-emerald-200/70 bg-emerald-50/60",
+        "overflow-hidden rounded-lg border bg-transparent text-xs",
+        running ? "border-amber-400/70" : "border-emerald-400/60",
       )}
     >
       <button
@@ -64,8 +64,10 @@ function ToolRow({ tool }: { tool: AgentToolActivity }) {
         <span className={cn("font-medium capitalize", theme.text)}>{formatToolName(tool.toolName)}</span>
         <span
           className={cn(
-            "rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-            running ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700",
+            "rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+            running
+              ? "border-amber-400/70 text-amber-700"
+              : "border-emerald-400/60 text-emerald-700",
           )}
         >
           {running ? "실행 중" : "완료"}
@@ -169,14 +171,7 @@ export function ChatAgentStatusPanel({
 
   if (!showPanel) {
     return (
-      <div
-        className={cn(
-          "flex items-center gap-2 rounded-xl border px-3 py-2 text-[11px]",
-          theme.sidebarBorder,
-          "bg-white/50",
-          className,
-        )}
-      >
+      <div className={cn("flex items-center gap-2 px-1 py-1 text-[11px]", className)}>
         <Sparkles className="h-3.5 w-3.5 text-violet-500" />
         <span className={theme.faint}>AG-UI 에이전트 대기 중</span>
       </div>
@@ -186,9 +181,8 @@ export function ChatAgentStatusPanel({
   return (
     <div
       className={cn(
-        "space-y-2 rounded-xl border px-3 py-2.5",
+        "space-y-2 rounded-2xl border bg-transparent px-3 py-2.5",
         theme.sidebarBorder,
-        "bg-white/60 backdrop-blur-sm",
         className,
       )}
     >
@@ -216,10 +210,10 @@ export function ChatAgentStatusPanel({
         </div>
         <span
           className={cn(
-            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+            "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
             agent.isRunning || mergedActivity.phase === "running"
-              ? "bg-violet-100 text-violet-700"
-              : "bg-black/5 text-black/60",
+              ? "border-violet-400/70 text-violet-700"
+              : cn(theme.sidebarBorder, theme.muted),
           )}
         >
           AG-UI

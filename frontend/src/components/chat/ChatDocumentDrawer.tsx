@@ -90,7 +90,7 @@ function DocumentRow({
       className={cn(
         "flex items-start gap-2.5 rounded-xl border px-2.5 py-2.5 transition hover:bg-black/[0.02]",
         theme.sidebarBorder,
-        selectable && selected && "border-[#E74C3C]/40 bg-[#E74C3C]/5",
+        selectable && selected && "border-[#E74C3C]/55",
       )}
     >
       {selectable && (
@@ -101,7 +101,7 @@ function DocumentRow({
             "mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition",
             selected
               ? "border-[#E74C3C] bg-[#E74C3C] text-white"
-              : "border-gray-300 bg-white",
+              : "border-gray-300 bg-transparent",
           )}
           aria-label={selected ? "선택 해제" : "선택"}
         >
@@ -109,7 +109,12 @@ function DocumentRow({
         </button>
       )}
 
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E74C3C]/10">
+      <div
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-transparent",
+          theme.sidebarBorder,
+        )}
+      >
         <FileText className="h-4 w-4 text-[#E74C3C]" />
       </div>
 
@@ -180,7 +185,7 @@ function EmbeddedDocumentRow({
   const theme = chatUiTheme;
 
   return (
-    <div className="flex items-start gap-2 rounded-lg border px-2 py-1.5">
+    <div className={cn("flex items-start gap-2 rounded-lg border bg-transparent px-2 py-1.5", theme.sidebarBorder)}>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1">
           <p className={cn("truncate text-[11px] font-medium", theme.text)}>{doc.title}</p>
@@ -334,9 +339,8 @@ export function ChatDocumentDrawer({
     >
       <div
         className={cn(
-          "flex h-full w-80 flex-col border-l shadow-[-8px_0_24px_-12px_rgba(0,0,0,0.12)] transition-[transform,opacity] duration-300 ease-in-out",
+          "my-2 mr-1 flex h-[calc(100%-1rem)] w-80 flex-col rounded-3xl border bg-white/70 backdrop-blur-xl transition-[transform,opacity] duration-300 ease-in-out",
           theme.sidebarBorder,
-          "bg-white/80 backdrop-blur-xl",
           open ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0",
         )}
       >
@@ -371,15 +375,16 @@ export function ChatDocumentDrawer({
         </div>
 
         <div className={cn("flex shrink-0 border-b px-2 py-2", theme.sidebarBorder)}>
-          <div className="flex w-full rounded-lg bg-black/[0.04] p-0.5">
+          <div className={cn("flex w-full rounded-lg border bg-transparent p-0.5", theme.sidebarBorder)}>
             <button
               type="button"
               onClick={() => setActiveTab("documents")}
               className={cn(
-                "flex flex-1 items-center justify-center gap-1 rounded-md py-1.5 text-[11px] font-medium transition",
+                "flex flex-1 items-center justify-center gap-1 rounded-md border py-1.5 text-[11px] font-medium transition",
                 activeTab === "documents"
-                  ? "bg-white text-[#E74C3C] shadow-sm"
-                  : theme.muted,
+                  ? "border-[#E74C3C]/50 text-[#E74C3C]"
+                  : "border-transparent",
+                activeTab !== "documents" && theme.muted,
               )}
             >
               <FileText className="h-3 w-3" />
@@ -392,10 +397,11 @@ export function ChatDocumentDrawer({
               type="button"
               onClick={() => setActiveTab("embeddings")}
               className={cn(
-                "flex flex-1 items-center justify-center gap-1 rounded-md py-1.5 text-[11px] font-medium transition",
+                "flex flex-1 items-center justify-center gap-1 rounded-md border py-1.5 text-[11px] font-medium transition",
                 activeTab === "embeddings"
-                  ? "bg-white text-violet-600 shadow-sm"
-                  : theme.muted,
+                  ? "border-violet-400/60 text-violet-600"
+                  : "border-transparent",
+                activeTab !== "embeddings" && theme.muted,
               )}
             >
               <Sparkles className="h-3 w-3" />

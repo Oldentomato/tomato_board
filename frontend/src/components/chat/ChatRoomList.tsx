@@ -27,16 +27,15 @@ export function ChatRoomList({
 
   return (
     <aside className={cn("flex min-h-0 flex-col", className)}>
-      <div
-        className={cn(
-          "shrink-0 border-b px-4 py-3.5",
-          theme.sidebarBorder,
-          "bg-gradient-to-b from-white/60 to-transparent",
-        )}
-      >
+      <div className={cn("shrink-0 border-b px-4 py-3.5", theme.sidebarBorder)}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/5">
+            <span
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-xl border bg-transparent",
+                theme.sidebarBorder,
+              )}
+            >
               <MessagesSquare className={cn("h-4 w-4", theme.text)} />
             </span>
             <div>
@@ -91,10 +90,10 @@ export function ChatRoomList({
             <li key={room.id}>
               <div
                 className={cn(
-                  "group relative flex items-stretch overflow-hidden rounded-xl transition-all",
+                  "group relative flex items-stretch overflow-hidden rounded-xl border bg-transparent transition-all",
                   selected
-                    ? "bg-black/[0.07] shadow-sm ring-1 ring-black/10"
-                    : "hover:bg-black/[0.04]",
+                    ? "border-slate-900/35"
+                    : "border-transparent hover:border-slate-900/15",
                 )}
               >
                 {selected && (

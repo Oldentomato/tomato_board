@@ -26,7 +26,7 @@ function DashboardHeader() {
 
   return (
     <EnterAnimation variant="down" delay={0}>
-      <header className="mb-4 flex shrink-0 items-center justify-between lg:mb-5">
+      <header className={cn("flex shrink-0 items-center justify-between", isChatPage ? "mb-2 lg:mb-3" : "mb-4 lg:mb-5")}>
       <div className="flex items-center gap-3">
         <h1 className={cn("text-2xl font-extrabold tracking-[0.08em]", theme.text)}>WORKSPACE</h1>
         {mock && (
@@ -98,11 +98,18 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       <SkyBackground theme={theme} />
       <div
         className={cn(
-          "relative flex flex-col overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8",
-          isChatPage ? "h-dvh max-h-dvh overflow-hidden" : "min-h-screen",
+          "relative flex flex-col overflow-x-hidden",
+          isChatPage
+            ? "h-dvh max-h-dvh overflow-hidden px-3 py-3 sm:px-5 sm:py-3 lg:px-6"
+            : "min-h-screen px-4 py-4 sm:px-6 sm:py-5 lg:px-8",
         )}
       >
-        <div className="mx-auto flex w-full max-w-screen-2xl min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+          className={cn(
+            "mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden",
+            isChatPage ? "max-w-none" : "max-w-screen-2xl",
+          )}
+        >
           <DashboardHeader />
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
           {!isChatPage && <DashboardFooter />}

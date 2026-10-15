@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Bot, CircleHelp, FileText, MessagesSquare, Send, User } from "lucide-react";
 import { useAgentContext } from "@copilotkit/react-core/v2";
-import { chatUiTheme } from "@/lib/weather/skyTheme";
+import { useSkyTheme } from "@/components/dashboard/SkyThemeContext";
 import { useChatGraphContext } from "@/components/chat/ChatGraphContext";
 import { useDocuments } from "@/hooks/useDocuments";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
@@ -78,7 +78,7 @@ export function ChatWindow({
   onToggleDocuments?: () => void;
   onCloseDocuments?: () => void;
 }) {
-  const theme = chatUiTheme;
+  const theme = useSkyTheme();
   const { activePath, branchContext, sendMessage, selectedRoomId, isSending, streamingNodeId, agents, selectedAgentId, setSelectedAgentId, agentActivity, documentPreviewsByMessageId } =
     useChatGraphContext();
   const [input, setInput] = useState("");
@@ -114,14 +114,17 @@ export function ChatWindow({
     }
   };
 
+  const ghostHover = theme.isDark ? "hover:bg-white/10" : "hover:bg-black/5";
+  const ghostButton = cn(
+    "flex shrink-0 items-center gap-1.5 rounded-full border bg-transparent px-3 py-1.5 text-xs font-medium transition",
+    theme.sidebarBorder,
+    ghostHover,
+    theme.muted,
+  );
+
   return (
     <section
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border shadow-sm",
-        theme.sidebarBorder,
-        "bg-white/40 backdrop-blur-sm",
-        className,
-      )}
+      className={cn("flex h-full min-h-0 flex-col overflow-hidden", className)}
       onClick={() => {
         if (roomsOpen) onCloseRooms?.();
         if (documentsOpen) onCloseDocuments?.();
@@ -134,13 +137,7 @@ export function ChatWindow({
         selectedAgentId={selectedAgentId}
       />
 
-      <header
-        className={cn(
-          "sticky top-0 z-10 shrink-0 border-b px-4 py-3",
-          theme.sidebarBorder,
-          "bg-white/80 backdrop-blur-md",
-        )}
-      >
+      <header className="shrink-0 px-1 pb-3 pt-1 sm:px-2">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h2 className={cn("text-sm font-semibold tracking-tight", theme.text)}>AI 채팅</h2>
@@ -152,15 +149,16 @@ export function ChatWindow({
               <p className={cn("mt-0.5 text-[11px]", theme.faint)}>대화를 시작해 보세요</p>
             )}
           </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
             {agents.length > 0 && (
               <select
                 value={selectedAgentId ?? ""}
                 onChange={(e) => setSelectedAgentId(e.target.value || null)}
                 disabled={isSending}
                 className={cn(
-                  "max-w-[140px] rounded-xl border bg-white/70 px-2.5 py-2 text-xs shadow-sm outline-none transition focus:border-black/15 focus:ring-2 focus:ring-black/5",
+                  "max-w-[140px] rounded-full border bg-transparent px-2.5 py-1.5 text-xs outline-none transition",
                   theme.sidebarBorder,
+                  ghostHover,
                   theme.text,
                 )}
                 aria-label="에이전트 선택"
@@ -179,11 +177,7 @@ export function ChatWindow({
                 e.stopPropagation();
                 setGuideOpen(true);
               }}
-              className={cn(
-                "flex shrink-0 items-center justify-center rounded-xl border bg-white/60 p-2 transition-all duration-200 hover:bg-white/80",
-                theme.sidebarBorder,
-                theme.muted,
-              )}
+              className={cn(ghostButton, "px-2")}
               aria-label="AI 채팅 가이드 열기"
             >
               <CircleHelp className="h-3.5 w-3.5" />
@@ -194,10 +188,8 @@ export function ChatWindow({
                 onClick={onToggleDocuments}
                 aria-expanded={documentsOpen}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200",
-                  documentsOpen
-                    ? "bg-[#E74C3C] text-white shadow-sm"
-                    : cn("border bg-white/60 hover:bg-white/80", theme.sidebarBorder, theme.muted),
+                  ghostButton,
+                  documentsOpen && "bg-[#E74C3C] text-white hover:bg-[#c0392b]",
                 )}
                 aria-label={documentsOpen ? "문서 목록 닫기" : "문서 목록 열기"}
               >
@@ -206,111 +198,102 @@ export function ChatWindow({
               </button>
             )}
             {onToggleRooms && (
-            <button
-              type="button"
-              onClick={onToggleRooms}
-              aria-expanded={roomsOpen}
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200",
-                roomsOpen
-                  ? "bg-black/85 text-white shadow-sm"
-                  : cn("border bg-white/60 hover:bg-white/80", theme.sidebarBorder, theme.muted),
-              )}
-              aria-label={roomsOpen ? "채팅방 목록 닫기" : "채팅방 목록 열기"}
-            >
-              <MessagesSquare className="h-3.5 w-3.5" />
-              <span>채팅방</span>
-            </button>
+              <button
+                type="button"
+                onClick={onToggleRooms}
+                aria-expanded={roomsOpen}
+                className={cn(
+                  ghostButton,
+                  roomsOpen && "bg-black/80 text-white hover:bg-black/90",
+                )}
+                aria-label={roomsOpen ? "채팅방 목록 닫기" : "채팅방 목록 열기"}
+              >
+                <MessagesSquare className="h-3.5 w-3.5" />
+                <span>채팅방</span>
+              </button>
             )}
           </div>
         </div>
-        <div className="mt-2.5">
+        <div className="mt-3">
           <ChatAgentStatusPanel activity={agentActivity} />
         </div>
       </header>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 scrollbar-subtle">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-1 py-2 scrollbar-subtle sm:px-2">
         {activePath.length === 0 ? (
           <div className={cn("flex h-full flex-col items-center justify-center px-6 text-center", theme.muted)}>
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-black/5">
-              <Bot className="h-7 w-7 opacity-50" />
-            </div>
-            <p className="text-sm font-medium">대화를 시작하세요</p>
-            <p className={cn("mt-1.5 max-w-xs text-xs leading-relaxed", theme.faint)}>
+            <Bot className={cn("mb-5 h-10 w-10 opacity-40", theme.icon)} />
+            <p className={cn("text-base font-medium", theme.text)}>대화를 시작하세요</p>
+            <p className={cn("mt-2 max-w-sm text-sm leading-relaxed", theme.faint)}>
               메시지를 입력하면 새 채팅방이 자동으로 만들어집니다.
             </p>
           </div>
         ) : (
-          activePath.map((message) => {
-            const isUser = message.role === "user";
-            const isStreaming = streamingNodeId === message.id;
-            const messagePreviews = documentPreviewsByMessageId[message.id] ?? [];
-            return (
-              <div
-                key={message.id}
-                className={cn("flex gap-2.5", isUser ? "flex-row-reverse" : "flex-row")}
-              >
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-7 py-4">
+            {activePath.map((message) => {
+              const isUser = message.role === "user";
+              const isStreaming = streamingNodeId === message.id;
+              const messagePreviews = documentPreviewsByMessageId[message.id] ?? [];
+              return (
                 <div
-                  className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 ring-black/5",
-                    isUser ? "bg-sky-100/80" : "bg-violet-100/80",
-                  )}
+                  key={message.id}
+                  className={cn("flex items-start gap-3", isUser ? "flex-row-reverse" : "flex-row")}
                 >
-                  {isUser ? (
-                    <User className="h-3.5 w-3.5 text-sky-700" />
-                  ) : (
-                    <Bot className="h-3.5 w-3.5 text-violet-700" />
-                  )}
-                </div>
-                <div
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-3.5 py-2.5 shadow-sm",
-                    isUser
-                      ? "rounded-tr-md bg-sky-500/10 ring-1 ring-sky-500/10"
-                      : "rounded-tl-md bg-white/70 ring-1 ring-black/5",
-                  )}
-                >
-                  {isUser ? (
-                    <p className={cn("text-sm leading-relaxed whitespace-pre-wrap", theme.text)}>
-                      {message.content}
+                  <div
+                    className={cn(
+                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                      isUser ? "bg-[#E74C3C] text-white" : "bg-violet-100 text-violet-700",
+                    )}
+                  >
+                    {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                  </div>
+                  <div className={cn("min-w-0", isUser ? "max-w-[78%]" : "flex-1")}>
+                    {isUser ? (
+                      <p className="rounded-3xl rounded-tr-lg bg-[#E74C3C] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-white">
+                        {message.content}
+                      </p>
+                    ) : (
+                      <div className="rounded-3xl rounded-tl-lg bg-white/75 px-4 py-3 text-[0.95rem] leading-7 text-slate-900 backdrop-blur-sm">
+                        <ChatMarkdown content={message.content} className="text-[0.95rem] leading-7" />
+                        {messagePreviews.length > 0 && (
+                          <div className="mt-4 space-y-3">
+                            {messagePreviews.map((preview, index) => (
+                              <DocumentPreviewPanel
+                                key={`${preview.document_id}-${index}`}
+                                payload={preview}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {isStreaming && (
+                          <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current align-middle opacity-60" />
+                        )}
+                      </div>
+                    )}
+                    <p
+                      className={cn(
+                        "mt-2 text-[10px] tabular-nums",
+                        isUser && "text-right",
+                        theme.faint,
+                      )}
+                    >
+                      {format(parseISO(message.createdAt), "M월 d일 HH:mm", { locale: ko })}
                     </p>
-                  ) : (
-                    <div className={theme.text}>
-                      <ChatMarkdown content={message.content} />
-                      {messagePreviews.length > 0 && (
-                        <div className="mt-3 space-y-3">
-                          {messagePreviews.map((preview, index) => (
-                            <DocumentPreviewPanel
-                              key={`${preview.document_id}-${index}`}
-                              payload={preview}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      {isStreaming && (
-                        <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-violet-500 align-middle" />
-                      )}
-                    </div>
-                  )}
-                  <p className={cn("mt-1.5 text-[10px] tabular-nums", theme.faint)}>
-                    {format(parseISO(message.createdAt), "M월 d일 HH:mm", { locale: ko })}
-                  </p>
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className={cn(
-          "sticky bottom-0 z-10 shrink-0 border-t px-4 py-3",
-          theme.sidebarBorder,
-          "bg-white/80 backdrop-blur-md",
-        )}
-      >
-        <div className="flex items-end gap-2">
+      <form onSubmit={handleSubmit} className="shrink-0 px-1 pb-1 pt-3 sm:px-2 sm:pb-2">
+        <div
+          className={cn(
+            "mx-auto flex max-w-3xl items-end gap-2 rounded-3xl border bg-white/70 px-3 py-2 backdrop-blur-md",
+            theme.sidebarBorder,
+          )}
+        >
           <textarea
             ref={textareaRef}
             value={input}
@@ -324,8 +307,7 @@ export function ChatWindow({
             placeholder="메시지 입력…"
             rows={1}
             className={cn(
-              "min-h-[44px] flex-1 resize-none overflow-hidden rounded-xl border bg-white/70 px-3.5 py-2.5 text-sm leading-relaxed shadow-sm outline-none transition focus:border-black/15 focus:ring-2 focus:ring-black/5",
-              theme.sidebarBorder,
+              "min-h-[44px] flex-1 resize-none overflow-hidden bg-transparent px-3 py-2.5 text-sm leading-relaxed outline-none",
               theme.text,
             )}
           />
@@ -333,8 +315,8 @@ export function ChatWindow({
             type="submit"
             disabled={!input.trim() || isSending}
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition",
-              "bg-black/85 text-white hover:bg-black/95 disabled:opacity-35",
+              "mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition",
+              "bg-[#E74C3C] text-white hover:bg-[#c0392b] disabled:opacity-35",
             )}
             aria-label="전송"
           >

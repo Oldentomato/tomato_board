@@ -94,7 +94,7 @@ export function DocumentPreviewPanel({ payload }: { payload: DocumentPreviewPayl
   }
 
   return (
-    <div className={cn("overflow-hidden rounded-xl border", theme.sidebarBorder, "bg-white/90")}>
+    <div className={cn("overflow-hidden rounded-xl border bg-transparent", theme.sidebarBorder)}>
       <div className={cn("flex items-center gap-2 border-b px-3 py-2", theme.sidebarBorder)}>
         <FileText className="h-4 w-4 shrink-0 text-[#E74C3C]" />
         <div className="min-w-0 flex-1">
